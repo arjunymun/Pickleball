@@ -21,11 +21,12 @@ export function AdminOffersPage() {
 
   const primaryRecoveryTarget = useMemo(() => adminDashboard.atRiskCustomers[0] ?? null, [adminDashboard.atRiskCustomers]);
 
-  function runAction(action: () => string) {
+  async function runAction(action: () => Promise<string> | string) {
     try {
+      const message = await action();
       setNotice({
         tone: "success",
-        message: action(),
+        message,
       });
     } catch (error) {
       setNotice({

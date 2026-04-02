@@ -1,20 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { CalendarRange, Coins, Clock3, RotateCcw } from "lucide-react";
 
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { getBlockingBookingForSlot } from "@/lib/demo-state";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatPercent, formatVenueDate, formatVenueRange } from "@/lib/formatters";
-import { bookableSlots, courts, customerProfiles, users } from "@/lib/mock-data";
 import { formatModeLabel, getAvailabilityClasses, getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
-
-const courtLookup = new Map(courts.map((court) => [court.id, court]));
-const customerNameLookup = new Map(
-  customerProfiles.map((profile) => [profile.id, users.find((user) => user.id === profile.userId)?.name ?? "Sideout player"]),
-);
 
 const initialNotice: NoticeState = {
   tone: "info",
@@ -22,30 +15,15 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminSchedulePage() {
-  const { adminDashboard, approveBooking, resetDemoState, state } = useSideoutDemo();
+  const { adminDashboard, approveBooking, resetDemoState } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
-  const schedule = useMemo(
-    () =>
-      bookableSlots.map((slot) => {
-        const blockingBooking = getBlockingBookingForSlot(state, slot.id);
-
-        return {
-          slot,
-          blockingBooking,
-          effectiveAvailability: blockingBooking ? "booked" : slot.availabilityState,
-          customerName: blockingBooking ? customerNameLookup.get(blockingBooking.customerId) ?? "Sideout player" : null,
-          court: courtLookup.get(slot.courtId),
-        };
-      }),
-    [state],
-  );
-
-  function runAction(action: () => string) {
+  async function runAction(action: () => Promise<string> | string) {
     try {
+      const message = await action();
       setNotice({
         tone: "success",
-        message: action(),
+        message,
       });
     } catch (error) {
       setNotice({
@@ -154,7 +132,7 @@ export function AdminSchedulePage() {
               description="Operators can scan availability, read booking state, and approve pending holds without jumping back to a single summary page."
             />
             <div className="mt-8 grid gap-4">
-              {schedule.map((entry) => (
+              {adminDashboard.schedule.map((entry) => (
                 <article key={entry.slot.id} className="rounded-[1.5rem] border border-[var(--line-soft)] bg-white/75 p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>

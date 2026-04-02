@@ -21,11 +21,12 @@ export function CustomerOffersPage() {
 
   const activeOffers = useMemo(() => offers.filter((offer) => offer.status === "active"), []);
 
-  function runAction(action: () => string) {
+  async function runAction(action: () => Promise<string> | string) {
     try {
+      const message = await action();
       setNotice({
         tone: "success",
-        message: action(),
+        message,
       });
     } catch (error) {
       setNotice({
@@ -35,7 +36,7 @@ export function CustomerOffersPage() {
     }
   }
 
-  function bookFromOffer(offerId: string) {
+  async function bookFromOffer(offerId: string) {
     const matchedSlot =
       customerExperience.slots.find(
         (entry) =>
@@ -48,7 +49,7 @@ export function CustomerOffersPage() {
       throw new Error("No eligible slot is open for that offer right now.");
     }
 
-    return bookSlot(matchedSlot.slot.id);
+    return await bookSlot(matchedSlot.slot.id);
   }
 
   return (

@@ -21,11 +21,12 @@ export function CustomerDashboard() {
   const { customerExperience, bookSlot, cancelBooking, resetDemoState } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
-  function runAction(action: () => string) {
+  async function runAction(action: () => Promise<string> | string) {
     try {
+      const message = await action();
       setNotice({
         tone: "success",
-        message: action(),
+        message,
       });
     } catch (error) {
       setNotice({

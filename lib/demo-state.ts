@@ -157,6 +157,8 @@ export function getCustomerExperience(state: DemoState, customerId = PREVIEW_CUS
   };
 }
 
+export type CustomerExperienceSnapshot = ReturnType<typeof getCustomerExperience>;
+
 export function getAdminDashboard(state: DemoState) {
   const confirmedOrCompleted = state.bookings.filter((booking) =>
     ["confirmed", "completed"].includes(booking.status),
@@ -195,6 +197,18 @@ export function getAdminDashboard(state: DemoState) {
       (first, second) =>
         new Date(first.slot.startsAt).getTime() - new Date(second.slot.startsAt).getTime(),
     );
+
+  const schedule = bookableSlots.map((slot) => {
+    const blockingBooking = getBlockingBookingForSlot(state, slot.id) ?? null;
+
+    return {
+      slot,
+      blockingBooking,
+      effectiveAvailability: blockingBooking ? "booked" : slot.availabilityState,
+      customerName: blockingBooking ? getUserByCustomerId(blockingBooking.customerId)?.name ?? "Sideout player" : null,
+      court: courts.find((court) => court.id === slot.courtId) ?? null,
+    };
+  });
 
   const atRiskCustomers = customerProfiles
     .map((profile) => {
@@ -269,12 +283,15 @@ export function getAdminDashboard(state: DemoState) {
       creditsExpiringSoon,
       offersRedeemed: offerRedemptions.length,
     },
+    schedule,
     requestQueue,
     upcomingConfirmed,
     atRiskCustomers,
     customers,
   };
 }
+
+export type AdminDashboardSnapshot = ReturnType<typeof getAdminDashboard>;
 
 function createId(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`}`;

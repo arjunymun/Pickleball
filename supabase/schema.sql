@@ -50,7 +50,8 @@ create table customer_profiles (
   joined_at timestamptz not null default now(),
   favorite_window text,
   skill_band text,
-  tags text[] not null default '{}'
+  tags text[] not null default '{}',
+  unique (user_id, venue_id)
 );
 
 create table admin_roles (
@@ -192,6 +193,9 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  created_user_id uuid;
+  default_venue_id uuid;
 begin
   insert into public.users (auth_user_id, full_name, email, phone)
   values (
@@ -203,7 +207,20 @@ begin
   on conflict (email) do update
     set auth_user_id = excluded.auth_user_id,
         full_name = excluded.full_name,
-        phone = coalesce(excluded.phone, public.users.phone);
+        phone = coalesce(excluded.phone, public.users.phone)
+  returning id into created_user_id;
+
+  select id
+  into default_venue_id
+  from public.venues
+  order by name
+  limit 1;
+
+  if default_venue_id is not null then
+    insert into public.customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
+    values (created_user_id, default_venue_id, 'Flexible', 'All levels', '{}')
+    on conflict (user_id, venue_id) do nothing;
+  end if;
 
   return new;
 end;
@@ -261,6 +278,311 @@ as $$
     where customer_profiles.id = profile_uuid
       and users.auth_user_id = auth.uid()
   );
+$$;
+
+create or replace function public.get_current_app_user_id()
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select users.id
+  from users
+  where users.auth_user_id = auth.uid()
+  limit 1;
+$$;
+
+create or replace function public.get_current_customer_profile_id(slot_or_venue_uuid uuid default null)
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select customer_profiles.id
+  from customer_profiles
+  where customer_profiles.user_id = public.get_current_app_user_id()
+    and (
+      slot_or_venue_uuid is null
+      or customer_profiles.venue_id = slot_or_venue_uuid
+      or customer_profiles.venue_id in (
+        select bookable_slots.venue_id
+        from bookable_slots
+        where bookable_slots.id = slot_or_venue_uuid
+      )
+    )
+  order by customer_profiles.joined_at asc
+  limit 1;
+$$;
+
+create or replace function public.book_slot_for_current_user(slot_uuid uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  customer_profile_id uuid;
+  active_booking_id uuid;
+  slot_row bookable_slots%rowtype;
+  new_booking_id uuid;
+  wallet_balance integer;
+  use_wallet boolean;
+  next_status booking_status;
+  next_payment_status booking_payment_status;
+  payment_mode_text text;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  select *
+  into slot_row
+  from bookable_slots
+  where id = slot_uuid;
+
+  if slot_row.id is null then
+    raise exception 'Slot not found.';
+  end if;
+
+  customer_profile_id := public.get_current_customer_profile_id(slot_row.venue_id);
+
+  if customer_profile_id is null then
+    raise exception 'Customer profile not found for the current user.';
+  end if;
+
+  select id
+  into active_booking_id
+  from bookings
+  where slot_id = slot_uuid
+    and status in ('requested', 'confirmed')
+  limit 1;
+
+  if active_booking_id is not null then
+    raise exception 'That slot is already unavailable.';
+  end if;
+
+  select coalesce(sum(amount_inr), 0)
+  into wallet_balance
+  from wallet_ledger_entries
+  where customer_id = customer_profile_id;
+
+  use_wallet := wallet_balance >= slot_row.price_inr and slot_row.payment_mode <> 'pay_at_venue';
+  next_status := case when slot_row.confirmation_mode = 'review' then 'requested' else 'confirmed' end;
+  next_payment_status := case
+    when slot_row.payment_mode = 'pay_at_venue' then 'pay_at_venue'
+    when use_wallet then 'credit_applied'
+    when next_status = 'requested' then 'pending'
+    else 'paid_online'
+  end;
+
+  insert into bookings (slot_id, customer_id, status, payment_status, attendees)
+  values (slot_uuid, customer_profile_id, next_status, next_payment_status, greatest(slot_row.capacity, 1))
+  returning id into new_booking_id;
+
+  payment_mode_text := case
+    when use_wallet then 'wallet'
+    when slot_row.payment_mode = 'pay_at_venue' then 'pay_at_venue'
+    else slot_row.payment_mode::text
+  end;
+
+  insert into booking_payments (booking_id, amount_inr, mode, status)
+  values (new_booking_id, slot_row.price_inr, payment_mode_text, next_payment_status);
+
+  if use_wallet then
+    insert into wallet_ledger_entries (customer_id, amount_inr, kind, note)
+    values (customer_profile_id, -slot_row.price_inr, 'credit_spent', concat('Applied to ', slot_row.label));
+  end if;
+
+  update bookable_slots
+  set availability_state = 'booked'
+  where id = slot_uuid;
+
+  if next_status = 'requested' then
+    return concat(slot_row.label, ' requested. Staff will review this hold before it is confirmed.');
+  end if;
+
+  if use_wallet then
+    return concat(slot_row.label, ' confirmed using venue credits.');
+  end if;
+
+  return concat(
+    slot_row.label,
+    ' confirmed and marked for ',
+    case when slot_row.payment_mode = 'pay_at_venue' then 'venue settlement' else 'online payment' end,
+    '.'
+  );
+end;
+$$;
+
+create or replace function public.cancel_booking_for_current_user(booking_uuid uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  booking_row bookings%rowtype;
+  slot_row bookable_slots%rowtype;
+  payment_amount integer;
+  customer_profile_id uuid;
+  remaining_active_count integer;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  customer_profile_id := public.get_current_customer_profile_id();
+
+  select *
+  into booking_row
+  from bookings
+  where id = booking_uuid
+    and customer_id = customer_profile_id;
+
+  if booking_row.id is null then
+    raise exception 'Booking not found.';
+  end if;
+
+  if booking_row.status not in ('requested', 'confirmed') then
+    raise exception 'Only live bookings can be canceled.';
+  end if;
+
+  select *
+  into slot_row
+  from bookable_slots
+  where id = booking_row.slot_id;
+
+  update bookings
+  set status = 'canceled'
+  where id = booking_uuid;
+
+  if booking_row.payment_status in ('paid_online', 'credit_applied') then
+    select coalesce(amount_inr, slot_row.price_inr)
+    into payment_amount
+    from booking_payments
+    where booking_id = booking_uuid
+    order by id desc
+    limit 1;
+
+    insert into wallet_ledger_entries (customer_id, amount_inr, kind, note)
+    values (
+      booking_row.customer_id,
+      coalesce(payment_amount, slot_row.price_inr),
+      'refund_credit',
+      concat('Customer cancellation credit for ', slot_row.label)
+    );
+  end if;
+
+  select count(*)
+  into remaining_active_count
+  from bookings
+  where slot_id = booking_row.slot_id
+    and status in ('requested', 'confirmed');
+
+  if remaining_active_count = 0 then
+    update bookable_slots
+    set availability_state = 'open'
+    where id = booking_row.slot_id;
+  end if;
+
+  return concat(slot_row.label, ' canceled. Value returned as venue credit where applicable.');
+end;
+$$;
+
+create or replace function public.approve_booking_as_admin(booking_uuid uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  booking_row bookings%rowtype;
+  slot_row bookable_slots%rowtype;
+  slot_venue_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  select *
+  into booking_row
+  from bookings
+  where id = booking_uuid;
+
+  if booking_row.id is null then
+    raise exception 'Booking not found.';
+  end if;
+
+  select *
+  into slot_row
+  from bookable_slots
+  where id = booking_row.slot_id;
+
+  slot_venue_id := slot_row.venue_id;
+
+  if not public.is_admin_for_venue(slot_venue_id) then
+    raise exception 'Admin access required.';
+  end if;
+
+  if booking_row.status <> 'requested' then
+    raise exception 'Only requested bookings can be approved.';
+  end if;
+
+  update bookings
+  set
+    status = 'confirmed',
+    payment_status = case
+      when payment_status = 'pending' and slot_row.payment_mode = 'pay_at_venue' then 'pay_at_venue'
+      when payment_status = 'pending' then 'paid_online'
+      else payment_status
+    end
+  where id = booking_uuid;
+
+  update bookable_slots
+  set availability_state = 'booked'
+  where id = booking_row.slot_id;
+
+  return concat(slot_row.label, ' confirmed from the operator queue.');
+end;
+$$;
+
+create or replace function public.add_wallet_credit_as_admin(customer_uuid uuid, amount_inr integer, note_text text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  profile_row customer_profiles%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  if amount_inr <= 0 then
+    raise exception 'Credit amount must be positive.';
+  end if;
+
+  select *
+  into profile_row
+  from customer_profiles
+  where id = customer_uuid;
+
+  if profile_row.id is null then
+    raise exception 'Customer profile not found.';
+  end if;
+
+  if not public.is_admin_for_venue(profile_row.venue_id) then
+    raise exception 'Admin access required.';
+  end if;
+
+  insert into wallet_ledger_entries (customer_id, amount_inr, kind, note)
+  values (customer_uuid, amount_inr, 'manual_adjustment', note_text);
+
+  return concat('Added ', amount_inr::text, ' INR in venue credit.');
+end;
 $$;
 
 alter table venues enable row level security;
