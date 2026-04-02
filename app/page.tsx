@@ -13,6 +13,7 @@ import {
 
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
 import { formatIndianCurrency, formatPercent, formatVenueDate, formatVenueRange } from "@/lib/formatters";
 import {
@@ -60,6 +61,7 @@ export default function HomePage() {
                   {item.label}
                 </Link>
               ))}
+              <ThemeToggle />
               <Link href="/app" className="secondary-button px-4 py-2 text-sm">
                 Customer preview
               </Link>
@@ -69,6 +71,11 @@ export default function HomePage() {
           <div className="grid gap-10 pt-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:pt-16">
             <Reveal className="max-w-3xl">
               <p className="section-eyebrow">Premium club, warm roots</p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <span className="hero-badge">Guest browse enabled</span>
+                <span className="hero-badge">Credits over cash refunds</span>
+                <span className="hero-badge">Operator-grade retention</span>
+              </div>
               <h1 className="display-font text-balance mt-5 text-6xl font-medium leading-[0.92] tracking-[-0.06em] text-[var(--ink-strong)] sm:text-7xl lg:text-[5.5rem]">
                 Pickleball software that feels like a premium venue, not a template dashboard.
               </h1>
@@ -92,13 +99,13 @@ export default function HomePage() {
                   <p className="section-eyebrow">Venue</p>
                   <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{courts.length} courts</p>
                 </div>
-                <div>
+                <div className="vibe-divider pl-4 sm:pl-6">
                   <p className="section-eyebrow">Repeat play</p>
                   <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
                     {formatPercent(adminSummary.repeatPlayRate)}
                   </p>
                 </div>
-                <div>
+                <div className="vibe-divider pl-4 sm:pl-6">
                   <p className="section-eyebrow">Offer response</p>
                   <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
                     {adminSummary.offersRedeemedThisCycle} redemptions

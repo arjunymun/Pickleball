@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Compass, UserRound } from "lucide-react";
 
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
 
 export default function CustomerLayout({
@@ -27,6 +28,7 @@ export default function CustomerLayout({
               <ArrowUpRight className="h-4 w-4" />
               Admin view
             </Link>
+            <ThemeToggle />
             <span className="inline-flex items-center gap-2 rounded-full bg-[var(--accent-soft)] px-4 py-2 text-[var(--accent)]">
               <UserRound className="h-4 w-4" />
               Guest browse enabled

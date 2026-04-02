@@ -3,6 +3,28 @@ import { IBM_Plex_Mono, Manrope, Newsreader } from "next/font/google";
 
 import "@/app/globals.css";
 
+const themeScript = `
+  (() => {
+    try {
+      const root = document.documentElement;
+      const storedTheme = window.localStorage.getItem("sideout-theme");
+      const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const resolvedTheme =
+        storedTheme === "light" || storedTheme === "dark"
+          ? storedTheme
+          : systemDark
+            ? "dark"
+            : "light";
+
+      root.dataset.theme = resolvedTheme;
+      root.style.colorScheme = resolvedTheme;
+    } catch (error) {
+      document.documentElement.dataset.theme = "light";
+      document.documentElement.style.colorScheme = "light";
+    }
+  })();
+`;
+
 const sans = Manrope({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -36,7 +58,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={`${sans.variable} ${display.variable} ${mono.variable} antialiased`}>
         {children}
       </body>

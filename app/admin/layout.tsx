@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Compass, Shield } from "lucide-react";
 
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
 
 export default function AdminLayout({
@@ -27,6 +28,7 @@ export default function AdminLayout({
               <ArrowUpRight className="h-4 w-4" />
               Customer view
             </Link>
+            <ThemeToggle inverted />
             <span className="inline-flex items-center gap-2 rounded-full bg-white/6 px-4 py-2 text-white">
               <Shield className="h-4 w-4" />
               Owner + staff roles

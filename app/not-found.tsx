@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
 
 export default function NotFound() {
@@ -9,9 +10,12 @@ export default function NotFound() {
       <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col justify-between">
         <header className="flex items-center justify-between border-b border-[var(--line-soft)] pb-6">
           <Wordmark />
-          <span className="rounded-full bg-[var(--background-strong)] px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-[var(--ink-soft)]">
-            404
-          </span>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <span className="rounded-full bg-[var(--background-strong)] px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-[var(--ink-soft)]">
+              404
+            </span>
+          </div>
         </header>
 
         <section className="surface-card-dark rounded-[2.4rem] p-8 sm:p-10">
