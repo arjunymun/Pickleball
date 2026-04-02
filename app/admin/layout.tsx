@@ -1,16 +1,20 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowUpRight, Compass, Shield } from "lucide-react";
 
 import { AuthStatusPill } from "@/components/auth/auth-status-pill";
 import { PreviewNav } from "@/components/ui/preview-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
+import { getAuthState } from "@/lib/auth";
 
 const adminNavItems = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/schedule", label: "Schedule" },
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/offers", label: "Offers" },
+  { href: "/admin/settings", label: "Settings" },
+  { href: "/admin/communications", label: "Comms" },
 ];
 
 export default async function AdminLayout({
@@ -18,6 +22,18 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const authState = await getAuthState();
+
+  if (authState.isConfigured && authState.setupStatus !== "demo") {
+    if (!authState.user) {
+      redirect("/sign-in");
+    }
+
+    if (!authState.user.hasAdminAccess) {
+      redirect("/app");
+    }
+  }
+
   return (
     <main className="page-frame min-h-screen px-6 pb-20 pt-6 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
@@ -48,8 +64,8 @@ export default async function AdminLayout({
         <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <PreviewNav items={adminNavItems} inverted />
           <p className="max-w-2xl text-sm leading-7 text-white/65">
-            The operator side keeps its control-room feel, and version 1.5 can now initialize a live Supabase venue so
-            the admin routes run on seeded real records instead of just the local demo shell.
+            The operator shell now covers setup, schedule control, customer memory, WhatsApp workflows, and commercial
+            actions while staying role-gated in live mode for owner and staff accounts only.
           </p>
         </div>
         {children}

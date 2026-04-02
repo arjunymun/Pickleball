@@ -15,7 +15,8 @@ const initialNotice: NoticeState = {
 };
 
 export function CustomerOffersPage() {
-  const { bookSlot, catalog, customerExperience, resetDemoState } = useSideoutDemo();
+  const { authStatus, bookSlot, capabilities, catalog, customerExperience, resetDemoState, runtimeSource } =
+    useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   const activeOffers = useMemo(
@@ -55,6 +56,31 @@ export function CustomerOffersPage() {
     }
 
     return await bookSlot(matchedSlot.slot.id);
+  }
+
+  async function startCheckout(kind: "pack" | "membership", resourceId: string) {
+    if (runtimeSource !== "supabase" || authStatus !== "signed_in") {
+      throw new Error("Sign in and initialize live mode before starting a Stripe checkout.");
+    }
+
+    const response = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        kind,
+        resourceId,
+      }),
+    });
+
+    const payload = (await response.json()) as { error?: string; url?: string };
+    if (!response.ok || !payload.url) {
+      throw new Error(payload.error ?? "Sideout could not start Stripe Checkout.");
+    }
+
+    window.location.assign(payload.url);
+    return "Redirecting to Stripe Checkout.";
   }
 
   return (
@@ -202,6 +228,13 @@ export function CustomerOffersPage() {
                     </div>
                     <p className="mt-2 text-sm text-[var(--ink-soft)]">{formatIndianCurrency(plan.monthlyPriceInr)} / month</p>
                     <p className="mt-2 text-sm text-[var(--ink-soft)]">{plan.perks[0]}</p>
+                    <button
+                      type="button"
+                      className="secondary-button mt-4 px-4 py-2 text-sm"
+                      onClick={() => runAction(() => startCheckout("membership", plan.id))}
+                    >
+                      {capabilities.commerceLive ? "Start membership checkout" : "Stripe-ready checkout"}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -220,6 +253,13 @@ export function CustomerOffersPage() {
                       {formatIndianCurrency(pack.priceInr)} for {pack.includedCredits} credits
                     </p>
                     <p className="mt-2 text-sm text-[var(--ink-soft)]">{pack.description}</p>
+                    <button
+                      type="button"
+                      className="secondary-button mt-4 px-4 py-2 text-sm"
+                      onClick={() => runAction(() => startCheckout("pack", pack.id))}
+                    >
+                      {capabilities.commerceLive ? "Buy this pack" : "Stripe-ready purchase"}
+                    </button>
                   </div>
                 ))}
               </div>

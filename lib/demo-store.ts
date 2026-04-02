@@ -3,16 +3,23 @@
 import type { Session as SupabaseSession, User as SupabaseUser } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
+import type { VenueSettings } from "@/lib/domain";
 import {
+  addCustomerNote as applyAddCustomerNote,
   addWalletCredit as applyWalletCredit,
   approveBooking as applyApproveBooking,
   bookSlot as applyBookSlot,
   cancelBooking as applyCancelBooking,
+  checkInBooking as applyCheckInBooking,
+  completeBooking as applyCompleteBooking,
   createSeedDemoState,
   DEMO_STATE_VERSION,
   getCommercialCatalog,
   getAdminDashboard,
   getCustomerExperience,
+  markBookingNoShow as applyMarkBookingNoShow,
+  sendCommunication as applySendCommunication,
+  updateVenueSettings as applyUpdateVenueSettings,
   type DemoState,
 } from "@/lib/demo-state";
 import { PREVIEW_CUSTOMER_ID } from "@/lib/mock-data";
@@ -40,7 +47,10 @@ function isDemoState(value: unknown): value is DemoState {
     candidate.version === DEMO_STATE_VERSION &&
     Array.isArray(candidate.bookings) &&
     Array.isArray(candidate.walletLedgerEntries) &&
-    Array.isArray(candidate.customerNotes)
+    Array.isArray(candidate.customerNotes) &&
+    Array.isArray(candidate.operatorActivity) &&
+    Array.isArray(candidate.communicationDeliveries) &&
+    Boolean(candidate.venueSettings)
   );
 }
 
@@ -135,14 +145,48 @@ function getServerSnapshot() {
 }
 
 function createDemoRuntimeSnapshot(state: DemoState, customerId = PREVIEW_CUSTOMER_ID): RuntimeSnapshot {
+  const adminDashboard = getAdminDashboard(state);
+  const customerExperience = getCustomerExperience(state, customerId);
+  const catalog = getCommercialCatalog();
+
   return {
     source: "demo",
-    customerExperience: getCustomerExperience(state, customerId),
-    adminDashboard: getAdminDashboard(state),
-    catalog: getCommercialCatalog(),
+    auth: {
+      status: "signed_out",
+      viewer: {
+        fullName: null,
+        email: null,
+        phone: null,
+        primaryRole: "guest",
+      },
+    },
+    setup: {
+      status: "demo",
+      venueId: adminDashboard.venue.id,
+      canBootstrapVenue: false,
+    },
+    publicSite: {
+      venue: adminDashboard.venue,
+      venueSettings: null,
+      featuredSlots: customerExperience.slots.slice(0, 4).map((entry) => entry.slot),
+      featuredOffers: catalog.offers.filter((offer) => offer.status !== "expired").slice(0, 3),
+      metrics: {
+        courtCount: adminDashboard.courts.length,
+        repeatPlayRate: adminDashboard.metrics.repeatPlayRate,
+        offersRedeemed: adminDashboard.metrics.offersRedeemed,
+        creditsExpiringSoon: adminDashboard.metrics.creditsExpiringSoon,
+      },
+    },
+    venueSettings: null,
+    customerExperience,
+    adminDashboard,
+    catalog,
     capabilities: {
       customerLive: false,
       adminLive: false,
+      commerceLive: false,
+      messagingLive: false,
+      pwaReady: true,
     },
   };
 }
@@ -337,6 +381,97 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
     return runMutation((draft) => applyWalletCredit(draft, targetCustomerId, amountInr, note));
   }
 
+  async function checkInBooking(bookingId: string) {
+    if (activeSnapshot.source === "supabase") {
+      if (!activeSnapshot.capabilities.adminLive) {
+        throw new Error("This signed-in account does not have admin access for live check-ins.");
+      }
+
+      const payload = await postRuntimeMutation(`/api/runtime/admin/bookings/${bookingId}/check-in`);
+      setRuntimeSnapshot(payload.snapshot);
+      return payload.message;
+    }
+
+    return runMutation((draft) => applyCheckInBooking(draft, bookingId));
+  }
+
+  async function completeBooking(bookingId: string) {
+    if (activeSnapshot.source === "supabase") {
+      if (!activeSnapshot.capabilities.adminLive) {
+        throw new Error("This signed-in account does not have admin access for live completion actions.");
+      }
+
+      const payload = await postRuntimeMutation(`/api/runtime/admin/bookings/${bookingId}/complete`);
+      setRuntimeSnapshot(payload.snapshot);
+      return payload.message;
+    }
+
+    return runMutation((draft) => applyCompleteBooking(draft, bookingId));
+  }
+
+  async function markBookingNoShow(bookingId: string) {
+    if (activeSnapshot.source === "supabase") {
+      if (!activeSnapshot.capabilities.adminLive) {
+        throw new Error("This signed-in account does not have admin access for live no-show actions.");
+      }
+
+      const payload = await postRuntimeMutation(`/api/runtime/admin/bookings/${bookingId}/no-show`);
+      setRuntimeSnapshot(payload.snapshot);
+      return payload.message;
+    }
+
+    return runMutation((draft) => applyMarkBookingNoShow(draft, bookingId));
+  }
+
+  async function addCustomerNote(customerId: string, body: string) {
+    if (activeSnapshot.source === "supabase") {
+      if (!activeSnapshot.capabilities.adminLive) {
+        throw new Error("This signed-in account does not have admin access for customer notes.");
+      }
+
+      const payload = await postRuntimeMutation("/api/runtime/admin/customer-note", {
+        customerId,
+        body,
+      });
+      setRuntimeSnapshot(payload.snapshot);
+      return payload.message;
+    }
+
+    return runMutation((draft) => applyAddCustomerNote(draft, customerId, body));
+  }
+
+  async function updateVenueSettings(patch: Record<string, unknown>) {
+    if (activeSnapshot.source === "supabase") {
+      if (!activeSnapshot.capabilities.adminLive) {
+        throw new Error("This signed-in account does not have admin access for venue settings.");
+      }
+
+      const payload = await postRuntimeMutation("/api/runtime/admin/venue-settings", patch);
+      setRuntimeSnapshot(payload.snapshot);
+      return payload.message;
+    }
+
+    return runMutation((draft) => applyUpdateVenueSettings(draft, patch as Partial<VenueSettings>));
+  }
+
+  async function sendCommunication(customerId: string, templateId: string, body: string) {
+    if (activeSnapshot.source === "supabase") {
+      if (!activeSnapshot.capabilities.adminLive) {
+        throw new Error("This signed-in account does not have admin access for live messaging.");
+      }
+
+      const payload = await postRuntimeMutation("/api/runtime/admin/send-message", {
+        customerId,
+        templateId,
+        body,
+      });
+      setRuntimeSnapshot(payload.snapshot);
+      return payload.message;
+    }
+
+    return runMutation((draft) => applySendCommunication(draft, customerId, templateId, body));
+  }
+
   async function bootstrapVenue() {
     if (!hasSupabaseEnv) {
       throw new Error("Supabase environment variables are missing. Add them in .env.local first.");
@@ -361,6 +496,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
 
   return {
     runtimeSource: activeSnapshot.source,
+    auth: activeSnapshot.auth,
+    setup: activeSnapshot.setup,
+    publicSite: activeSnapshot.publicSite,
+    venueSettings: activeSnapshot.venueSettings,
     isSupabaseConfigured: hasSupabaseEnv,
     authStatus,
     customerExperience,
@@ -371,6 +510,12 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
     cancelBooking,
     approveBooking,
     addWalletCredit,
+    checkInBooking,
+    completeBooking,
+    markBookingNoShow,
+    addCustomerNote,
+    updateVenueSettings,
+    sendCommunication,
     bootstrapVenue,
     resetDemoState: reset,
   };

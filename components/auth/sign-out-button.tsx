@@ -6,11 +6,11 @@ import { useTransition } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 interface SignOutButtonProps {
-  email: string;
+  label: string;
   inverted?: boolean;
 }
 
-export function SignOutButton({ email, inverted = false }: SignOutButtonProps) {
+export function SignOutButton({ label, inverted = false }: SignOutButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -33,7 +33,7 @@ export function SignOutButton({ email, inverted = false }: SignOutButtonProps) {
       onClick={handleSignOut}
       disabled={isPending}
     >
-      {isPending ? "Signing out..." : `Sign out ${email}`}
+      {isPending ? "Signing out..." : `Sign out ${label}`}
     </button>
   );
 }

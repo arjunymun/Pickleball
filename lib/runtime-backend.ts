@@ -11,6 +11,8 @@ import type {
   AttendanceEvent,
   Booking,
   BookableSlot,
+  CommunicationDelivery,
+  CommunicationTemplate,
   Court,
   CustomerMembership,
   CustomerNote,
@@ -19,28 +21,101 @@ import type {
   MembershipPlan,
   Offer,
   OfferRedemption,
+  OperatorActivityLog,
   PackProduct,
   SlotTemplate,
   User,
   Venue,
+  VenueSettings,
   WalletLedgerEntry,
 } from "@/lib/domain";
-import type { RuntimeSnapshot } from "@/lib/runtime-types";
+import type { RuntimePublicSiteSnapshot, RuntimeSnapshot } from "@/lib/runtime-types";
+import { getTwilioWhatsappEnv } from "@/lib/communications/whatsapp";
+import { isStripeConfigured } from "@/lib/stripe/env";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const RUNTIME_NOW = "2026-04-02T08:00:00+05:30";
 
+const DEMO_VENUE_SETTINGS: VenueSettings = {
+  id: "demo-venue-settings",
+  venueId: "demo-venue",
+  cancellationCutoffHours: 6,
+  bookingWindowDays: 14,
+  reminderLeadHours: [24, 2],
+  publicContactPhone: "+91 98765 43110",
+  publicContactEmail: "play@sideout.club",
+  publicWhatsappNumber: "+91 98765 43110",
+  memberDiscountPercent: 10,
+  featuredAnnouncement: "Sunrise courts are the cleanest way back into your weekly rhythm.",
+};
+
+function buildPublicSiteSnapshot(params: {
+  venue: Venue;
+  venueSettings: VenueSettings | null;
+  courts: Court[];
+  featuredSlots: BookableSlot[];
+  featuredOffers: Offer[];
+  repeatPlayRate: number;
+  offersRedeemed: number;
+  creditsExpiringSoon: number;
+}): RuntimePublicSiteSnapshot {
+  return {
+    venue: params.venue,
+    venueSettings: params.venueSettings,
+    featuredSlots: params.featuredSlots,
+    featuredOffers: params.featuredOffers,
+    metrics: {
+      courtCount: params.courts.length,
+      repeatPlayRate: params.repeatPlayRate,
+      offersRedeemed: params.offersRedeemed,
+      creditsExpiringSoon: params.creditsExpiringSoon,
+    },
+  };
+}
+
 function getDemoSnapshot(): RuntimeSnapshot {
   const state = createSeedDemoState();
+  const customerExperience = getCustomerExperience(state);
+  const adminDashboard = getAdminDashboard(state);
+  const catalog = getCommercialCatalog();
 
   return {
     source: "demo",
-    customerExperience: getCustomerExperience(state),
-    adminDashboard: getAdminDashboard(state),
-    catalog: getCommercialCatalog(),
+    auth: {
+      status: "signed_out",
+      viewer: {
+        fullName: null,
+        email: null,
+        phone: null,
+        primaryRole: "guest",
+      },
+    },
+    setup: {
+      status: "demo",
+      venueId: adminDashboard.venue.id,
+      canBootstrapVenue: false,
+    },
+    publicSite: buildPublicSiteSnapshot({
+      venue: adminDashboard.venue,
+      venueSettings: DEMO_VENUE_SETTINGS,
+      courts: adminDashboard.courts,
+      featuredSlots: customerExperience.slots.slice(0, 4).map((entry) => entry.slot),
+      featuredOffers: catalog.offers.filter((offer) => offer.status !== "expired").slice(0, 3),
+      repeatPlayRate: adminDashboard.metrics.repeatPlayRate,
+      offersRedeemed: adminDashboard.metrics.offersRedeemed,
+      creditsExpiringSoon: adminDashboard.metrics.creditsExpiringSoon,
+    }),
+    venueSettings: DEMO_VENUE_SETTINGS,
+    customerExperience,
+    adminDashboard,
+    catalog,
     capabilities: {
       customerLive: false,
       adminLive: false,
+      commerceLive: isStripeConfigured(),
+      messagingLive: Boolean(getTwilioWhatsappEnv()),
+      pwaReady: true,
     },
   };
 }
@@ -72,6 +147,7 @@ function mapUserRow(row: Record<string, unknown>): User {
     name: String(row.full_name),
     email: String(row.email),
     phone: typeof row.phone === "string" ? row.phone : "",
+    stripeCustomerId: typeof row.stripe_customer_id === "string" ? row.stripe_customer_id : null,
   };
 }
 
@@ -83,6 +159,30 @@ function mapCustomerProfileRow(row: Record<string, unknown>): CustomerProfile {
     favoriteWindow: typeof row.favorite_window === "string" && row.favorite_window.length > 0 ? row.favorite_window : "Flexible",
     skillBand: typeof row.skill_band === "string" && row.skill_band.length > 0 ? row.skill_band : "All levels",
     tags: Array.isArray(row.tags) ? row.tags.map((tag) => String(tag)) : [],
+    phoneE164: typeof row.phone_e164 === "string" ? row.phone_e164 : null,
+    whatsappOptIn: typeof row.whatsapp_opt_in === "boolean" ? row.whatsapp_opt_in : false,
+    communicationPreference:
+      row.communication_preference === "email" || row.communication_preference === "sms"
+        ? row.communication_preference
+        : "whatsapp",
+    lastContactedAt: typeof row.last_contacted_at === "string" ? row.last_contacted_at : null,
+  };
+}
+
+function mapVenueSettingsRow(row: Record<string, unknown>): VenueSettings {
+  return {
+    id: String(row.id),
+    venueId: String(row.venue_id),
+    cancellationCutoffHours: Number(row.cancellation_cutoff_hours),
+    bookingWindowDays: Number(row.booking_window_days),
+    reminderLeadHours: Array.isArray(row.reminder_lead_hours)
+      ? row.reminder_lead_hours.map((value) => Number(value))
+      : [],
+    publicContactPhone: typeof row.public_contact_phone === "string" ? row.public_contact_phone : "",
+    publicContactEmail: typeof row.public_contact_email === "string" ? row.public_contact_email : "",
+    publicWhatsappNumber: typeof row.public_whatsapp_number === "string" ? row.public_whatsapp_number : "",
+    memberDiscountPercent: Number(row.member_discount_percent ?? 0),
+    featuredAnnouncement: typeof row.featured_announcement === "string" ? row.featured_announcement : "",
   };
 }
 
@@ -136,6 +236,7 @@ function mapBookingRow(row: Record<string, unknown>): Booking {
     status:
       row.status === "requested" ||
       row.status === "confirmed" ||
+      row.status === "checked_in" ||
       row.status === "canceled" ||
       row.status === "completed" ||
       row.status === "no_show" ||
@@ -147,6 +248,12 @@ function mapBookingRow(row: Record<string, unknown>): Booking {
         ? row.payment_status
         : "pending",
     attendees: Number(row.attendees),
+    confirmedAt: typeof row.confirmed_at === "string" ? row.confirmed_at : null,
+    checkedInAt: typeof row.checked_in_at === "string" ? row.checked_in_at : null,
+    completedAt: typeof row.completed_at === "string" ? row.completed_at : null,
+    noShowMarkedAt: typeof row.no_show_marked_at === "string" ? row.no_show_marked_at : null,
+    canceledAt: typeof row.canceled_at === "string" ? row.canceled_at : null,
+    creditedAt: typeof row.credited_at === "string" ? row.credited_at : null,
   };
 }
 
@@ -158,6 +265,7 @@ function mapPackProductRow(row: Record<string, unknown>): PackProduct {
     includedCredits: Number(row.included_credits),
     validDays: Number(row.valid_days),
     description: String(row.description),
+    stripePriceId: typeof row.stripe_price_id === "string" ? row.stripe_price_id : null,
   };
 }
 
@@ -168,6 +276,7 @@ function mapMembershipPlanRow(row: Record<string, unknown>): MembershipPlan {
     monthlyPriceInr: Number(row.monthly_price_inr),
     includedCredits: Number(row.included_credits),
     perks: Array.isArray(row.perks) ? row.perks.map((perk) => String(perk)) : [],
+    stripePriceId: typeof row.stripe_price_id === "string" ? row.stripe_price_id : null,
   };
 }
 
@@ -188,6 +297,11 @@ function mapCustomerMembershipRow(row: Record<string, unknown>): CustomerMembers
     planId: String(row.plan_id),
     status: row.status === "paused" || row.status === "expired" ? row.status : "active",
     renewsAt: String(row.renews_at),
+    stripeSubscriptionId:
+      typeof row.stripe_subscription_id === "string" ? row.stripe_subscription_id : null,
+    currentPeriodEndsAt:
+      typeof row.current_period_ends_at === "string" ? row.current_period_ends_at : null,
+    cancelAtPeriodEnd: Boolean(row.cancel_at_period_end),
   };
 }
 
@@ -250,6 +364,50 @@ function mapCustomerNoteRow(row: Record<string, unknown>): CustomerNote {
     authoredBy: String(row.authored_by),
     createdAt: String(row.created_at),
     body: String(row.body),
+  };
+}
+
+function mapOperatorActivityLogRow(row: Record<string, unknown>): OperatorActivityLog {
+  return {
+    id: String(row.id),
+    venueId: String(row.venue_id),
+    actorUserId: typeof row.actor_user_id === "string" ? row.actor_user_id : null,
+    customerId: typeof row.customer_id === "string" ? row.customer_id : null,
+    bookingId: typeof row.booking_id === "string" ? row.booking_id : null,
+    action: String(row.action),
+    detail: String(row.detail),
+    createdAt: String(row.created_at),
+  };
+}
+
+function mapCommunicationTemplateRow(row: Record<string, unknown>): CommunicationTemplate {
+  return {
+    id: String(row.id),
+    venueId: String(row.venue_id),
+    slug: String(row.slug),
+    channel: "whatsapp",
+    title: String(row.title),
+    body: String(row.body),
+  };
+}
+
+function mapCommunicationDeliveryRow(row: Record<string, unknown>): CommunicationDelivery {
+  return {
+    id: String(row.id),
+    venueId: String(row.venue_id),
+    customerId: String(row.customer_id),
+    bookingId: typeof row.booking_id === "string" ? row.booking_id : null,
+    templateId: typeof row.template_id === "string" ? row.template_id : null,
+    channel: "whatsapp",
+    direction: "outbound",
+    status:
+      row.status === "sent" || row.status === "delivered" || row.status === "failed"
+        ? row.status
+        : "queued",
+    provider: typeof row.provider === "string" ? row.provider : "mock",
+    providerMessageId: typeof row.provider_message_id === "string" ? row.provider_message_id : null,
+    body: String(row.body),
+    sentAt: String(row.sent_at),
   };
 }
 
@@ -356,6 +514,7 @@ function buildCustomerExperienceFromRemote(params: {
 
 function buildAdminDashboardFromRemote(params: {
   venue: Venue;
+  venueSettings: VenueSettings | null;
   courts: Court[];
   slotTemplates: SlotTemplate[];
   adminRoles: AdminRole[];
@@ -371,11 +530,16 @@ function buildAdminDashboardFromRemote(params: {
   walletEntries: WalletLedgerEntry[];
   attendanceEvents: AttendanceEvent[];
   customerNotes: CustomerNote[];
+  operatorActivity: OperatorActivityLog[];
+  communicationTemplates: CommunicationTemplate[];
+  communicationDeliveries: CommunicationDelivery[];
 }): AdminDashboardSnapshot {
   const {
     adminRoles,
     attendanceEvents,
     bookings,
+    communicationDeliveries,
+    communicationTemplates,
     courts,
     customerMemberships,
     customerNotes,
@@ -388,7 +552,9 @@ function buildAdminDashboardFromRemote(params: {
     slots,
     users,
     venue,
+    venueSettings,
     walletEntries,
+    operatorActivity,
   } = params;
 
   const userById = new Map(users.map((user) => [user.id, user]));
@@ -513,6 +679,7 @@ function buildAdminDashboardFromRemote(params: {
       return {
         id: profile.id,
         name: user.name,
+        phone: profile.phoneE164 ?? user.phone,
         favoriteWindow: profile.favoriteWindow,
         totalBookings: bookings.filter((booking) => booking.customerId === profile.id).length,
         membership: membershipName,
@@ -521,6 +688,8 @@ function buildAdminDashboardFromRemote(params: {
         note: customerNotes.find((entry) => entry.customerId === profile.id) ?? null,
         nextBooking,
         daysSinceLastAttendance: daysSince(lastAttendance),
+        lastContactedAt: profile.lastContactedAt ?? null,
+        communicationPreference: profile.communicationPreference ?? "whatsapp",
       };
     })
     .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
@@ -546,6 +715,7 @@ function buildAdminDashboardFromRemote(params: {
 
   return {
     venue,
+    venueSettings: venueSettings ?? DEMO_VENUE_SETTINGS,
     courts,
     slotTemplates,
     adminRoles,
@@ -561,7 +731,99 @@ function buildAdminDashboardFromRemote(params: {
     upcomingConfirmed,
     atRiskCustomers,
     customers,
+    operatorActivity,
+    communicationTemplates,
+    communicationDeliveries,
+    customerSegments: {
+      inactivePlayers: atRiskCustomers.length,
+      expiringPackValue: creditsExpiringSoon,
+      upcomingRenewals: customerMemberships.filter((entry) => entry.status === "active").length,
+      noShowRisk: bookings.filter((booking) => booking.status === "no_show").length,
+    },
   };
+}
+
+export async function getPublicSiteSnapshot(): Promise<RuntimePublicSiteSnapshot> {
+  const demoSnapshot = getDemoSnapshot();
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return demoSnapshot.publicSite;
+  }
+
+  const { data: venueRow } = await supabase.from("venues").select("*").order("name").limit(1).maybeSingle();
+  if (!venueRow) {
+    return demoSnapshot.publicSite;
+  }
+
+  const venue = mapVenueRow(venueRow as Record<string, unknown>);
+  const [
+    courtsResult,
+    slotsResult,
+    offersResult,
+    venueSettingsResult,
+  ] = await Promise.all([
+    supabase.from("courts").select("*").eq("venue_id", venue.id),
+    supabase.from("bookable_slots").select("*").eq("venue_id", venue.id).order("starts_at", { ascending: true }),
+    supabase.from("offers").select("*").eq("venue_id", venue.id).order("starts_at", { ascending: true }),
+    supabase.from("venue_settings").select("*").eq("venue_id", venue.id).maybeSingle(),
+  ]);
+
+  const adminSupabase = createSupabaseAdminClient();
+  let repeatPlayRate = demoSnapshot.publicSite.metrics.repeatPlayRate;
+  let creditsExpiringSoon = demoSnapshot.publicSite.metrics.creditsExpiringSoon;
+  let offersRedeemed = demoSnapshot.publicSite.metrics.offersRedeemed;
+
+  if (adminSupabase) {
+    const [customerProfilesResult, bookingsResult, customerPacksResult, offerRedemptionsResult] = await Promise.all([
+      adminSupabase.from("customer_profiles").select("id").eq("venue_id", venue.id),
+      adminSupabase.from("bookings").select("customer_id, slot_id"),
+      adminSupabase.from("customer_packs").select("customer_id, expires_at"),
+      adminSupabase.from("offer_redemptions").select("id, offer_id"),
+    ]);
+
+    const customerIds = new Set((customerProfilesResult.data ?? []).map((row) => String(row.id)));
+    const repeatPlayers = new Set(
+      (bookingsResult.data ?? [])
+        .filter((row) => customerIds.has(String(row.customer_id)))
+        .map((row) => String(row.customer_id)),
+    );
+
+    repeatPlayRate =
+      customerIds.size > 0
+        ? (Array.from(repeatPlayers).filter((customerId) =>
+            (bookingsResult.data ?? []).filter((row) => String(row.customer_id) === customerId).length > 1,
+          ).length /
+            customerIds.size) *
+          100
+        : 0;
+    creditsExpiringSoon = (customerPacksResult.data ?? []).filter((row) => {
+      const expiresAt = typeof row.expires_at === "string" ? row.expires_at : null;
+      return expiresAt
+        ? new Date(expiresAt).getTime() - new Date(RUNTIME_NOW).getTime() < 7 * 24 * 60 * 60 * 1000
+        : false;
+    }).length;
+    offersRedeemed = (offerRedemptionsResult.data ?? []).length;
+  }
+
+  return buildPublicSiteSnapshot({
+    venue,
+    venueSettings: venueSettingsResult.data
+      ? mapVenueSettingsRow(venueSettingsResult.data as Record<string, unknown>)
+      : null,
+    courts: (courtsResult.data ?? []).map((row) => mapCourtRow(row as Record<string, unknown>)),
+    featuredSlots: (slotsResult.data ?? [])
+      .map((row) => mapBookableSlotRow(row as Record<string, unknown>))
+      .filter((slot) => slot.availabilityState !== "booked")
+      .slice(0, 4),
+    featuredOffers: (offersResult.data ?? [])
+      .map((row) => mapOfferRow(row as Record<string, unknown>))
+      .filter((offer) => offer.status !== "expired")
+      .slice(0, 3),
+    repeatPlayRate,
+    offersRedeemed,
+    creditsExpiringSoon,
+  });
 }
 
 export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
@@ -586,19 +848,10 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
     .eq("auth_user_id", authUser.id)
     .maybeSingle();
 
-  if (!appUserRow) {
-    return demoSnapshot;
-  }
-
-  const { data: customerProfileRowsRaw } = await supabase
-    .from("customer_profiles")
-    .select("*")
-    .eq("user_id", appUserRow.id);
-
-  const { data: adminRoleRowsRaw } = await supabase
-    .from("admin_roles")
-    .select("*")
-    .eq("user_id", appUserRow.id);
+  const [{ data: customerProfileRowsRaw }, { data: adminRoleRowsRaw }] = await Promise.all([
+    appUserRow ? supabase.from("customer_profiles").select("*").eq("user_id", appUserRow.id) : Promise.resolve({ data: [] }),
+    appUserRow ? supabase.from("admin_roles").select("*").eq("user_id", appUserRow.id) : Promise.resolve({ data: [] }),
+  ]);
 
   const customerProfileRows = customerProfileRowsRaw ?? [];
   const adminRoleRows = adminRoleRowsRaw ?? [];
@@ -613,14 +866,64 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
   const activeVenueId =
     (ownerAdminRoleRow?.venue_id as string | undefined) ??
     (staffAdminRoleRow?.venue_id as string | undefined) ??
-    (customerProfileRows[0]?.venue_id as string | undefined);
+    (customerProfileRows[0]?.venue_id as string | undefined) ??
+    null;
+
+  const currentUser =
+    appUserRow && typeof appUserRow === "object"
+      ? mapUserRow(appUserRow as Record<string, unknown>)
+      : {
+          id: authUser.id,
+          name:
+            typeof authUser.user_metadata?.full_name === "string"
+              ? authUser.user_metadata.full_name
+              : typeof authUser.user_metadata?.name === "string"
+                ? authUser.user_metadata.name
+                : "Sideout player",
+          email: authUser.email ?? `user-${authUser.id}@sideout.local`,
+          phone: authUser.phone ?? "",
+          stripeCustomerId: null,
+        };
+
+  const primaryRole =
+    ownerAdminRoleRow ? "owner" : staffAdminRoleRow ? "staff" : customerProfileRows.length > 0 ? "customer" : "guest";
+  const publicSite = await getPublicSiteSnapshot();
 
   if (!activeVenueId) {
-    return demoSnapshot;
+    return {
+      source: "supabase",
+      auth: {
+        status: "signed_in",
+        viewer: {
+          fullName: currentUser.name,
+          email: authUser.email ?? currentUser.email,
+          phone: authUser.phone ?? currentUser.phone,
+          primaryRole,
+        },
+      },
+      setup: {
+        status: "needs_bootstrap",
+        venueId: null,
+        canBootstrapVenue: true,
+      },
+      publicSite,
+      venueSettings: null,
+      customerExperience: demoSnapshot.customerExperience,
+      adminDashboard: demoSnapshot.adminDashboard,
+      catalog: demoSnapshot.catalog,
+      capabilities: {
+        customerLive: false,
+        adminLive: false,
+        commerceLive: isStripeConfigured(),
+        messagingLive: Boolean(getTwilioWhatsappEnv()),
+        pwaReady: true,
+      },
+    };
   }
 
   const [
     venueResult,
+    venueSettingsResult,
     courtsResult,
     slotTemplatesResult,
     slotsResult,
@@ -629,6 +932,7 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
     membershipPlansResult,
   ] = await Promise.all([
     supabase.from("venues").select("*").eq("id", activeVenueId).maybeSingle(),
+    supabase.from("venue_settings").select("*").eq("venue_id", activeVenueId).maybeSingle(),
     supabase.from("courts").select("*").eq("venue_id", activeVenueId),
     supabase.from("slot_templates").select("*").eq("venue_id", activeVenueId),
     supabase.from("bookable_slots").select("*").eq("venue_id", activeVenueId).order("starts_at", { ascending: true }),
@@ -638,12 +942,35 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
   ]);
 
   if (!venueResult.data || !slotsResult.data) {
-    return demoSnapshot;
+    return {
+      ...demoSnapshot,
+      source: "supabase",
+      auth: {
+        status: "signed_in",
+        viewer: {
+          fullName: currentUser.name,
+          email: authUser.email ?? currentUser.email,
+          phone: authUser.phone ?? currentUser.phone,
+          primaryRole,
+        },
+      },
+      setup: {
+        status: "needs_bootstrap",
+        venueId: null,
+        canBootstrapVenue: true,
+      },
+      publicSite,
+    };
   }
 
   const venue = mapVenueRow(venueResult.data as Record<string, unknown>);
+  const venueSettings = venueSettingsResult.data
+    ? mapVenueSettingsRow(venueSettingsResult.data as Record<string, unknown>)
+    : null;
   const courts = (courtsResult.data ?? []).map((row) => mapCourtRow(row as Record<string, unknown>));
-  const slotTemplates = (slotTemplatesResult.data ?? []).map((row) => mapSlotTemplateRow(row as Record<string, unknown>));
+  const slotTemplates = (slotTemplatesResult.data ?? []).map((row) =>
+    mapSlotTemplateRow(row as Record<string, unknown>),
+  );
   const slots = (slotsResult.data ?? []).map((row) => mapBookableSlotRow(row as Record<string, unknown>));
   const offers = (offersResult.data ?? []).map((row) => mapOfferRow(row as Record<string, unknown>));
   const packProducts = (packProductsResult.data ?? []).map((row) => mapPackProductRow(row as Record<string, unknown>));
@@ -653,7 +980,6 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
 
   const customerProfileRow = customerProfileRows[0] as Record<string, unknown> | undefined;
   const customerProfile = customerProfileRow ? mapCustomerProfileRow(customerProfileRow) : null;
-  const currentUser = mapUserRow(appUserRow as Record<string, unknown>);
   const adminRoles = adminRoleRows.map((row) => mapAdminRoleRow(row as Record<string, unknown>));
 
   let customerExperience: CustomerExperienceSnapshot | null = null;
@@ -692,6 +1018,9 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
       attendanceEventsResult,
       customerNotesResult,
       offerRedemptionsResult,
+      operatorActivityResult,
+      communicationTemplatesResult,
+      communicationDeliveriesResult,
     ] = await Promise.all([
       supabase.from("customer_profiles").select("*").eq("venue_id", activeVenueId),
       supabase.from("users").select("*"),
@@ -702,6 +1031,9 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
       supabase.from("attendance_events").select("*"),
       supabase.from("customer_notes").select("*"),
       supabase.from("offer_redemptions").select("*"),
+      supabase.from("operator_activity_log").select("*").eq("venue_id", activeVenueId).order("created_at", { ascending: false }),
+      supabase.from("communication_templates").select("*").eq("venue_id", activeVenueId),
+      supabase.from("communication_deliveries").select("*").eq("venue_id", activeVenueId).order("sent_at", { ascending: false }),
     ]);
 
     const customerProfiles = (customerProfilesResult.data ?? []).map((row) =>
@@ -718,6 +1050,7 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
 
     adminDashboard = buildAdminDashboardFromRemote({
       venue,
+      venueSettings,
       courts,
       slotTemplates,
       adminRoles,
@@ -745,11 +1078,46 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
       customerNotes: (customerNotesResult.data ?? [])
         .map((row) => mapCustomerNoteRow(row as Record<string, unknown>))
         .filter((entry) => allowedCustomerIds.has(entry.customerId)),
+      operatorActivity: (operatorActivityResult.data ?? []).map((row) =>
+        mapOperatorActivityLogRow(row as Record<string, unknown>),
+      ),
+      communicationTemplates: (communicationTemplatesResult.data ?? []).map((row) =>
+        mapCommunicationTemplateRow(row as Record<string, unknown>),
+      ),
+      communicationDeliveries: (communicationDeliveriesResult.data ?? [])
+        .map((row) => mapCommunicationDeliveryRow(row as Record<string, unknown>))
+        .filter((entry) => allowedCustomerIds.has(entry.customerId)),
     });
   }
 
   return {
     source: "supabase",
+    auth: {
+      status: "signed_in",
+      viewer: {
+        fullName: currentUser.name,
+        email: authUser.email ?? currentUser.email,
+        phone: authUser.phone ?? currentUser.phone,
+        primaryRole,
+      },
+    },
+    setup: {
+      status: "live",
+      venueId: activeVenueId,
+      canBootstrapVenue: false,
+    },
+    publicSite: buildPublicSiteSnapshot({
+      venue,
+      venueSettings,
+      courts,
+      featuredSlots: slots.filter((slot) => slot.availabilityState !== "booked").slice(0, 4),
+      featuredOffers: offers.filter((offer) => offer.status !== "expired").slice(0, 3),
+      repeatPlayRate: adminDashboard?.metrics.repeatPlayRate ?? demoSnapshot.publicSite.metrics.repeatPlayRate,
+      offersRedeemed: adminDashboard?.metrics.offersRedeemed ?? demoSnapshot.publicSite.metrics.offersRedeemed,
+      creditsExpiringSoon:
+        adminDashboard?.metrics.creditsExpiringSoon ?? demoSnapshot.publicSite.metrics.creditsExpiringSoon,
+    }),
+    venueSettings,
     customerExperience: customerExperience ?? demoSnapshot.customerExperience,
     adminDashboard: adminDashboard ?? demoSnapshot.adminDashboard,
     catalog: {
@@ -760,6 +1128,12 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
     capabilities: {
       customerLive: Boolean(customerExperience),
       adminLive: Boolean(adminDashboard),
+      commerceLive: isStripeConfigured() && Boolean(
+        packProducts.some((product) => Boolean(product.stripePriceId)) ||
+          membershipPlans.some((plan) => Boolean(plan.stripePriceId)),
+      ),
+      messagingLive: Boolean(getTwilioWhatsappEnv()),
+      pwaReady: true,
     },
   };
 }

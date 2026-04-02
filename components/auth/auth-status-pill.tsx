@@ -11,8 +11,14 @@ interface AuthStatusPillProps {
 export async function AuthStatusPill({ inverted = false }: AuthStatusPillProps) {
   const authState = await getAuthState();
 
-  if (authState.user?.email) {
-    return <SignOutButton email={authState.user.email} inverted={inverted} />;
+  if (authState.user) {
+    const label =
+      authState.user.phone ??
+      authState.user.email ??
+      authState.user.fullName ??
+      "player";
+
+    return <SignOutButton label={label} inverted={inverted} />;
   }
 
   if (authState.isConfigured) {

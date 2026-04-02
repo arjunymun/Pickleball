@@ -16,15 +16,15 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
 import { formatIndianCurrency, formatPercent, formatVenueDate, formatVenueRange } from "@/lib/formatters";
+import { getPublicSiteSnapshot } from "@/lib/runtime-backend";
 import {
   adminSummary,
   atRiskCustomers,
-  courts,
-  highlightedSlots,
+  courts as mockCourts,
+  highlightedSlots as highlightedSlotsFallback,
   membershipPlans,
-  offers,
+  offers as offersFallback,
   packProducts,
-  venue,
 } from "@/lib/mock-data";
 import { site } from "@/lib/site";
 
@@ -46,7 +46,12 @@ const productPillars = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const publicSite = await getPublicSiteSnapshot();
+  const venue = publicSite.venue;
+  const highlightedSlots = publicSite.featuredSlots.length > 0 ? publicSite.featuredSlots : highlightedSlotsFallback;
+  const offers = publicSite.featuredOffers.length > 0 ? publicSite.featuredOffers : offersFallback;
+
   return (
     <main className="page-frame">
       <section className="relative overflow-hidden px-6 pb-20 pt-6 sm:px-8 lg:px-12">
@@ -100,18 +105,18 @@ export default function HomePage() {
               <div className="mt-10 grid gap-4 sm:grid-cols-3">
                 <div>
                   <p className="section-eyebrow">Venue</p>
-                  <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{courts.length} courts</p>
+                  <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{publicSite.metrics.courtCount} courts</p>
                 </div>
                 <div className="vibe-divider pl-4 sm:pl-6">
                   <p className="section-eyebrow">Repeat play</p>
                   <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
-                    {formatPercent(adminSummary.repeatPlayRate)}
+                    {formatPercent(publicSite.metrics.repeatPlayRate)}
                   </p>
                 </div>
                 <div className="vibe-divider pl-4 sm:pl-6">
                   <p className="section-eyebrow">Offer response</p>
                   <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
-                    {adminSummary.offersRedeemedThisCycle} redemptions
+                    {publicSite.metrics.offersRedeemed} redemptions
                   </p>
                 </div>
               </div>
@@ -218,7 +223,7 @@ export default function HomePage() {
                         <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">{slot.label}</h3>
                         <p className="mt-2 text-sm text-[var(--ink-soft)]">
                           {formatVenueRange(slot.startsAt, slot.endsAt)} on{" "}
-                          {courts.find((court) => court.id === slot.courtId)?.name}
+                          {mockCourts.find((court) => court.id === slot.courtId)?.name ?? "Court deck"}
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs font-medium">
@@ -376,11 +381,11 @@ export default function HomePage() {
                 </article>
                 <article className="rounded-[1.5rem] border border-white/10 bg-white/4 p-5">
                   <p className="mono-detail text-white/50">Repeat play</p>
-                  <p className="metric-value mt-2 text-white">{formatPercent(adminSummary.repeatPlayRate)}</p>
+                  <p className="metric-value mt-2 text-white">{formatPercent(publicSite.metrics.repeatPlayRate)}</p>
                 </article>
                 <article className="rounded-[1.5rem] border border-white/10 bg-white/4 p-5">
                   <p className="mono-detail text-white/50">Credits expiring</p>
-                  <p className="metric-value mt-2 text-white">{adminSummary.creditsExpiringSoon}</p>
+                  <p className="metric-value mt-2 text-white">{publicSite.metrics.creditsExpiringSoon}</p>
                 </article>
               </div>
             </div>

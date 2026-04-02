@@ -15,7 +15,7 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminCustomersPage() {
-  const { addWalletCredit, adminDashboard, resetDemoState } = useSideoutDemo();
+  const { addCustomerNote, addWalletCredit, adminDashboard, resetDemoState, sendCommunication } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   async function runAction(action: () => Promise<string> | string) {
@@ -147,8 +147,12 @@ export function AdminCustomersPage() {
                         {customer.note?.body ?? "No operator note yet. This surface is ready for higher-touch customer memory."}
                       </p>
                       <div className="mt-5 grid gap-2 text-sm text-[var(--ink-soft)]">
+                        <p>Phone: {customer.phone ?? "Phone-first profile pending"}</p>
                         <p>Credits available: {formatIndianCurrency(customer.creditsRemaining)}</p>
                         <p>Days since last attendance: {customer.daysSinceLastAttendance}</p>
+                        <p>
+                          Last contacted: {customer.lastContactedAt ? customer.lastContactedAt.slice(0, 10) : "Not yet logged"}
+                        </p>
                         <p>
                           Next booking:{" "}
                           {customer.nextBooking
@@ -171,6 +175,35 @@ export function AdminCustomersPage() {
                         }
                       >
                         Add INR 300
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button px-4 py-2 text-sm"
+                        onClick={() =>
+                          runAction(() =>
+                            addCustomerNote(
+                              customer.id,
+                              `Flagged ${customer.name} for a personalized follow-up around ${customer.favoriteWindow.toLowerCase()} inventory.`,
+                            ),
+                          )
+                        }
+                      >
+                        Add note
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button px-4 py-2 text-sm"
+                        onClick={() =>
+                          runAction(() =>
+                            sendCommunication(
+                              customer.id,
+                              "template-sunrise-recovery",
+                              `Sideout dropped a small recovery nudge into ${customer.name}'s WhatsApp flow.`,
+                            ),
+                          )
+                        }
+                      >
+                        Send WhatsApp
                       </button>
                       <div className="inline-flex items-center gap-2 rounded-full bg-[var(--background-strong)] px-4 py-2 text-sm text-[var(--ink-soft)]">
                         <Sparkles className="h-4 w-4" />

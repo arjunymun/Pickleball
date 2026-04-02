@@ -2,7 +2,11 @@ import type {
   Booking,
   BookingPaymentStatus,
   BookableSlot,
+  CommunicationDelivery,
+  CommunicationTemplate,
   CustomerNote,
+  OperatorActivityLog,
+  VenueSettings,
   WalletLedgerEntry,
 } from "@/lib/domain";
 import {
@@ -34,6 +38,9 @@ export interface DemoState {
   bookings: Booking[];
   walletLedgerEntries: WalletLedgerEntry[];
   customerNotes: CustomerNote[];
+  venueSettings: VenueSettings;
+  operatorActivity: OperatorActivityLog[];
+  communicationDeliveries: CommunicationDelivery[];
 }
 
 export interface DemoMutationResult {
@@ -53,12 +60,30 @@ function cloneCustomerNote(entry: CustomerNote): CustomerNote {
   return { ...entry };
 }
 
+function cloneVenueSettings(entry: VenueSettings): VenueSettings {
+  return {
+    ...entry,
+    reminderLeadHours: [...entry.reminderLeadHours],
+  };
+}
+
+function cloneOperatorActivity(entry: OperatorActivityLog): OperatorActivityLog {
+  return { ...entry };
+}
+
+function cloneCommunicationDelivery(entry: CommunicationDelivery): CommunicationDelivery {
+  return { ...entry };
+}
+
 export function createSeedDemoState(): DemoState {
   return {
     version: DEMO_STATE_VERSION,
     bookings: bookings.map(cloneBooking),
     walletLedgerEntries: walletLedgerEntries.map(cloneWalletEntry),
     customerNotes: customerNotes.map(cloneCustomerNote),
+    venueSettings: cloneVenueSettings(demoVenueSettings),
+    operatorActivity: demoOperatorActivity.map(cloneOperatorActivity),
+    communicationDeliveries: demoCommunicationDeliveries.map(cloneCommunicationDelivery),
   };
 }
 
@@ -172,6 +197,118 @@ export function getCommercialCatalog() {
 
 export type CommercialCatalogSnapshot = ReturnType<typeof getCommercialCatalog>;
 
+const demoVenueSettings: VenueSettings = {
+  id: "demo-venue-settings",
+  venueId: venue.id,
+  cancellationCutoffHours: 6,
+  bookingWindowDays: 14,
+  reminderLeadHours: [24, 2],
+  publicContactPhone: "+91 98765 43110",
+  publicContactEmail: "play@sideout.club",
+  publicWhatsappNumber: "+91 98765 43110",
+  memberDiscountPercent: 10,
+  featuredAnnouncement: "Sunrise inventory is the cleanest place to win back off-rhythm regulars.",
+};
+
+const demoOperatorActivity: OperatorActivityLog[] = [
+  {
+    id: "activity-001",
+    venueId: venue.id,
+    actorUserId: users[0]?.id ?? null,
+    customerId: PREVIEW_CUSTOMER_ID,
+    bookingId: bookings[0]?.id ?? null,
+    action: "credit_added",
+    detail: "Recovery credit added for a lapsed sunrise regular.",
+    createdAt: "2026-04-01T18:20:00+05:30",
+  },
+  {
+    id: "activity-002",
+    venueId: venue.id,
+    actorUserId: users[0]?.id ?? null,
+    customerId: PREVIEW_CUSTOMER_ID,
+    bookingId: bookings[0]?.id ?? null,
+    action: "booking_approved",
+    detail: "Coach hold approved from the operator queue.",
+    createdAt: "2026-04-01T16:05:00+05:30",
+  },
+  {
+    id: "activity-003",
+    venueId: venue.id,
+    actorUserId: users[0]?.id ?? null,
+    customerId: customerProfiles[1]?.id ?? null,
+    bookingId: null,
+    action: "whatsapp_sent",
+    detail: "Sunrise recovery nudge delivered through WhatsApp.",
+    createdAt: "2026-03-31T19:45:00+05:30",
+  },
+];
+
+const demoCommunicationTemplates: CommunicationTemplate[] = [
+  {
+    id: "template-booking-confirmation",
+    venueId: venue.id,
+    slug: "booking-confirmation",
+    channel: "whatsapp",
+    title: "Booking confirmation",
+    body: "You are confirmed for {{slot_label}} on {{slot_date}}. Reply if you need to release the court before cutoff.",
+  },
+  {
+    id: "template-review-approved",
+    venueId: venue.id,
+    slug: "review-approved",
+    channel: "whatsapp",
+    title: "Review hold approved",
+    body: "Your request for {{slot_label}} has been approved. We will hold the court for you.",
+  },
+  {
+    id: "template-sunrise-recovery",
+    venueId: venue.id,
+    slug: "sunrise-recovery",
+    channel: "whatsapp",
+    title: "Sunrise recovery",
+    body: "We dropped a small recovery credit into your wallet for a sunrise session this week.",
+  },
+  {
+    id: "template-membership-renewal",
+    venueId: venue.id,
+    slug: "membership-renewal",
+    channel: "whatsapp",
+    title: "Membership renewal",
+    body: "Your Sideout membership renews soon. We will keep your member pricing and monthly credits active after renewal.",
+  },
+];
+
+const demoCommunicationDeliveries: CommunicationDelivery[] = [
+  {
+    id: "delivery-001",
+    venueId: venue.id,
+    customerId: PREVIEW_CUSTOMER_ID,
+    bookingId: bookings[0]?.id ?? null,
+    templateId: "template-booking-confirmation",
+    channel: "whatsapp",
+    direction: "outbound",
+    status: "delivered",
+    provider: "twilio_whatsapp",
+    providerMessageId: "demo-msg-001",
+    body: "You are confirmed for Sunrise Rally tomorrow.",
+    sentAt: "2026-04-01T18:25:00+05:30",
+  },
+  {
+    id: "delivery-002",
+    venueId: venue.id,
+    customerId: customerProfiles[1]?.id ?? PREVIEW_CUSTOMER_ID,
+    bookingId: null,
+    templateId: "template-sunrise-recovery",
+    channel: "whatsapp",
+    direction: "outbound",
+    status: "sent",
+    provider: "twilio_whatsapp",
+    providerMessageId: "demo-msg-002",
+    body: "We dropped a sunrise recovery credit into your wallet.",
+    sentAt: "2026-04-01T09:10:00+05:30",
+  },
+];
+
 export function getAdminDashboard(state: DemoState) {
   const confirmedOrCompleted = state.bookings.filter((booking) =>
     ["confirmed", "completed"].includes(booking.status),
@@ -268,6 +405,7 @@ export function getAdminDashboard(state: DemoState) {
     return {
       id: profile.id,
       name: user.name,
+      phone: profile.phoneE164 ?? user.phone,
       favoriteWindow: profile.favoriteWindow,
       totalBookings: state.bookings.filter((booking) => booking.customerId === profile.id).length,
       membership: membershipName,
@@ -281,11 +419,14 @@ export function getAdminDashboard(state: DemoState) {
               (24 * 60 * 60 * 1000),
           )
         : 99,
+      lastContactedAt: profile.lastContactedAt ?? null,
+      communicationPreference: profile.communicationPreference ?? "whatsapp",
     };
   });
 
   return {
     venue,
+    venueSettings: state.venueSettings,
     courts,
     slotTemplates,
     adminRoles,
@@ -301,6 +442,15 @@ export function getAdminDashboard(state: DemoState) {
     upcomingConfirmed,
     atRiskCustomers,
     customers,
+    operatorActivity: state.operatorActivity,
+    communicationTemplates: demoCommunicationTemplates,
+    communicationDeliveries: state.communicationDeliveries,
+    customerSegments: {
+      inactivePlayers: atRiskCustomers.length,
+      expiringPackValue: creditsExpiringSoon,
+      upcomingRenewals: customerMemberships.filter((entry) => entry.status === "active").length,
+      noShowRisk: state.bookings.filter((booking) => booking.status === "no_show").length,
+    },
   };
 }
 
@@ -334,6 +484,28 @@ function getPaymentStatusForBooking(
   return "paid_online";
 }
 
+function pushOperatorActivity(
+  state: DemoState,
+  action: string,
+  detail: string,
+  customerId: string | null,
+  bookingId: string | null,
+) {
+  return [
+    {
+      id: createId("activity"),
+      venueId: venue.id,
+      actorUserId: users[0]?.id ?? null,
+      customerId,
+      bookingId,
+      action,
+      detail,
+      createdAt: new Date().toISOString(),
+    },
+    ...state.operatorActivity,
+  ];
+}
+
 export function bookSlot(
   state: DemoState,
   slotId: string,
@@ -352,17 +524,25 @@ export function bookSlot(
   const nextStatus: Booking["status"] = slot.confirmationMode === "review" ? "requested" : "confirmed";
   const paymentStatus = getPaymentStatusForBooking(slot, nextStatus, useWallet);
 
+  const createdBooking: Booking = {
+    id: createId("booking"),
+    slotId,
+    customerId,
+    bookedAt: new Date().toISOString(),
+    status: nextStatus,
+    paymentStatus,
+    attendees: 4,
+    confirmedAt: nextStatus === "confirmed" ? new Date().toISOString() : null,
+    checkedInAt: null,
+    completedAt: null,
+    noShowMarkedAt: null,
+    canceledAt: null,
+    creditedAt: null,
+  };
+
   const nextBookings = [
     ...state.bookings,
-    {
-      id: createId("booking"),
-      slotId,
-      customerId,
-      bookedAt: new Date().toISOString(),
-      status: nextStatus,
-      paymentStatus,
-      attendees: 4,
-    },
+    createdBooking,
   ];
 
   const nextWalletEntries = useWallet
@@ -391,6 +571,13 @@ export function bookSlot(
       ...state,
       bookings: nextBookings,
       walletLedgerEntries: nextWalletEntries,
+      operatorActivity: pushOperatorActivity(
+        state,
+        nextStatus === "requested" ? "booking_requested" : "booking_created",
+        `${slot.label} ${nextStatus === "requested" ? "requested for operator review" : "confirmed from the customer surface"}.`,
+        customerId,
+        createdBooking.id,
+      ),
     },
     message,
   };
@@ -412,7 +599,9 @@ export function cancelBooking(
 
   const slot = getSlotById(booking.slotId)!;
   const nextBookings = state.bookings.map((entry) =>
-    entry.id === bookingId ? { ...entry, status: "canceled" as const } : entry,
+    entry.id === bookingId
+      ? { ...entry, status: "canceled" as const, canceledAt: new Date().toISOString() }
+      : entry,
   );
 
   const shouldCreditBack = ["paid_online", "credit_applied"].includes(booking.paymentStatus);
@@ -435,6 +624,13 @@ export function cancelBooking(
       ...state,
       bookings: nextBookings,
       walletLedgerEntries: nextWalletEntries,
+      operatorActivity: pushOperatorActivity(
+        state,
+        actorLabel === "Customer" ? "booking_canceled" : "operator_canceled_booking",
+        `${actorLabel} canceled ${slot.label}.`,
+        booking.customerId,
+        booking.id,
+      ),
     },
     message: `${slot.label} canceled. Value returned as venue credit where applicable.`,
   };
@@ -453,10 +649,11 @@ export function approveBooking(state: DemoState, bookingId: string): DemoMutatio
   const slot = getSlotById(booking.slotId)!;
 
   const nextBookings = state.bookings.map((entry) =>
-    entry.id === bookingId
+        entry.id === bookingId
       ? {
           ...entry,
           status: "confirmed" as const,
+          confirmedAt: new Date().toISOString(),
           paymentStatus:
             entry.paymentStatus === "pending"
               ? getPaymentStatusForBooking(slot, "confirmed", false)
@@ -469,6 +666,13 @@ export function approveBooking(state: DemoState, bookingId: string): DemoMutatio
     nextState: {
       ...state,
       bookings: nextBookings,
+      operatorActivity: pushOperatorActivity(
+        state,
+        "booking_approved",
+        `${slot.label} confirmed from the operator queue.`,
+        booking.customerId,
+        booking.id,
+      ),
     },
     message: `${slot.label} confirmed from the operator queue.`,
   };
@@ -498,7 +702,216 @@ export function addWalletCredit(
           note,
         },
       ],
+      operatorActivity: pushOperatorActivity(
+        state,
+        "credit_added",
+        note,
+        customerId,
+        null,
+      ),
     },
     message: `Added ${amountInr} INR in venue credit.`,
+  };
+}
+
+export function checkInBooking(state: DemoState, bookingId: string): DemoMutationResult {
+  const booking = state.bookings.find((entry) => entry.id === bookingId);
+  if (!booking) {
+    throw new Error("Booking not found.");
+  }
+
+  if (!["confirmed", "checked_in"].includes(booking.status)) {
+    throw new Error("Only confirmed bookings can be checked in.");
+  }
+
+  const slot = getSlotById(booking.slotId)!;
+
+  return {
+    nextState: {
+      ...state,
+      bookings: state.bookings.map((entry) =>
+        entry.id === bookingId
+          ? {
+              ...entry,
+              status: "checked_in",
+              checkedInAt: entry.checkedInAt ?? new Date().toISOString(),
+            }
+          : entry,
+      ),
+      operatorActivity: pushOperatorActivity(
+        state,
+        "booking_checked_in",
+        `${slot.label} checked in from the operator board.`,
+        booking.customerId,
+        booking.id,
+      ),
+    },
+    message: `${slot.label} checked in.`,
+  };
+}
+
+export function completeBooking(state: DemoState, bookingId: string): DemoMutationResult {
+  const booking = state.bookings.find((entry) => entry.id === bookingId);
+  if (!booking) {
+    throw new Error("Booking not found.");
+  }
+
+  if (!["confirmed", "checked_in"].includes(booking.status)) {
+    throw new Error("Only active bookings can be completed.");
+  }
+
+  const slot = getSlotById(booking.slotId)!;
+
+  return {
+    nextState: {
+      ...state,
+      bookings: state.bookings.map((entry) =>
+        entry.id === bookingId
+          ? {
+              ...entry,
+              status: "completed",
+              completedAt: new Date().toISOString(),
+            }
+          : entry,
+      ),
+      operatorActivity: pushOperatorActivity(
+        state,
+        "booking_completed",
+        `${slot.label} marked completed.`,
+        booking.customerId,
+        booking.id,
+      ),
+    },
+    message: `${slot.label} marked completed.`,
+  };
+}
+
+export function markBookingNoShow(state: DemoState, bookingId: string): DemoMutationResult {
+  const booking = state.bookings.find((entry) => entry.id === bookingId);
+  if (!booking) {
+    throw new Error("Booking not found.");
+  }
+
+  if (!["confirmed", "checked_in"].includes(booking.status)) {
+    throw new Error("Only active bookings can be marked no-show.");
+  }
+
+  const slot = getSlotById(booking.slotId)!;
+
+  return {
+    nextState: {
+      ...state,
+      bookings: state.bookings.map((entry) =>
+        entry.id === bookingId
+          ? {
+              ...entry,
+              status: "no_show",
+              noShowMarkedAt: new Date().toISOString(),
+            }
+          : entry,
+      ),
+      operatorActivity: pushOperatorActivity(
+        state,
+        "booking_no_show",
+        `${slot.label} marked as no-show.`,
+        booking.customerId,
+        booking.id,
+      ),
+    },
+    message: `${slot.label} marked as no-show.`,
+  };
+}
+
+export function addCustomerNote(state: DemoState, customerId: string, body: string): DemoMutationResult {
+  if (!body.trim()) {
+    throw new Error("Note body is required.");
+  }
+
+  return {
+    nextState: {
+      ...state,
+      customerNotes: [
+        {
+          id: createId("note"),
+          customerId,
+          authoredBy: "Sideout operator",
+          createdAt: new Date().toISOString(),
+          body: body.trim(),
+        },
+        ...state.customerNotes,
+      ],
+      operatorActivity: pushOperatorActivity(
+        state,
+        "customer_note_added",
+        body.trim(),
+        customerId,
+        null,
+      ),
+    },
+    message: "Customer note added.",
+  };
+}
+
+export function updateVenueSettings(
+  state: DemoState,
+  patch: Partial<VenueSettings>,
+): DemoMutationResult {
+  const nextSettings = {
+    ...state.venueSettings,
+    ...patch,
+    reminderLeadHours: patch.reminderLeadHours ?? state.venueSettings.reminderLeadHours,
+  };
+
+  return {
+    nextState: {
+      ...state,
+      venueSettings: nextSettings,
+      operatorActivity: pushOperatorActivity(
+        state,
+        "venue_settings_updated",
+        "Venue settings updated from the operator settings surface.",
+        null,
+        null,
+      ),
+    },
+    message: "Venue settings updated.",
+  };
+}
+
+export function sendCommunication(
+  state: DemoState,
+  customerId: string,
+  templateId: string,
+  body: string,
+): DemoMutationResult {
+  return {
+    nextState: {
+      ...state,
+      communicationDeliveries: [
+        {
+          id: createId("delivery"),
+          venueId: venue.id,
+          customerId,
+          bookingId: null,
+          templateId,
+          channel: "whatsapp",
+          direction: "outbound",
+          status: "sent",
+          provider: "twilio_whatsapp",
+          providerMessageId: createId("provider"),
+          body,
+          sentAt: new Date().toISOString(),
+        },
+        ...state.communicationDeliveries,
+      ],
+      operatorActivity: pushOperatorActivity(
+        state,
+        "whatsapp_sent",
+        body,
+        customerId,
+        null,
+      ),
+    },
+    message: "WhatsApp message queued in the Sideout demo flow.",
   };
 }

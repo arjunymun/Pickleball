@@ -5,7 +5,17 @@ Sideout is a premium Next.js concept build for a real Dehradun pickleball venue.
 - a customer-facing experience for availability, bookings, wallet value, packs, memberships, and offers
 - an admin-facing operating console for schedule control, retention, promotions, and customer intelligence
 
-The current repo stays reviewable on localhost in demo mode, but version 1.5 now includes a real Supabase auth and runtime path. Once `.env.local` is configured, a signed-in user can initialize a live seeded Sideout venue directly from the app and move the customer/admin shells onto Supabase-backed records.
+The current repo stays reviewable on localhost in demo mode, but the app now stretches well beyond the original 1.5 live-runtime shell:
+
+- phone-first customer auth via Supabase OTP
+- email magic-link operator auth for owner/staff flows
+- live-mode bootstrap and first-run setup state
+- role-gated admin routes
+- operator lifecycle actions for approvals, check-ins, completion, and no-shows
+- venue settings and communications surfaces
+- Stripe Checkout + webhook scaffolding for packs and recurring memberships
+- Twilio WhatsApp provider wiring with graceful fallback logging
+- installable customer PWA shell
 
 ## Stack
 
@@ -17,6 +27,8 @@ The current repo stays reviewable on localhost in demo mode, but version 1.5 now
 - Lucide React
 - Supabase schema starter
 - Supabase SSR/auth client wiring
+- Stripe server integration
+- Vercel Analytics + Speed Insights
 
 ## Local development
 
@@ -35,11 +47,25 @@ To enable the real backend/auth flow:
 
 1. Copy `.env.example` to `.env.local`
 2. Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. Add `SUPABASE_SERVICE_ROLE_KEY` if you want admin/server-side mutation paths later
+3. Add `SUPABASE_SERVICE_ROLE_KEY` for live admin/server-side mutation paths and webhook updates
 4. Run the SQL in [supabase/schema.sql](./supabase/schema.sql) against your Supabase project
-5. Start the app, sign in from `/sign-in`, then use the `Initialize live venue` action on `/app` or `/admin`
+5. Start the app, sign in from `/sign-in`, then use the `Initialize live venue` action on `/app`
 
 If the Supabase env vars are missing, Sideout falls back to demo mode automatically and keeps the customer/admin flows reviewable on localhost.
+
+### Commerce + messaging setup
+
+To turn on the 1.8 / 1.9 live integrations:
+
+1. Add `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
+2. Configure the Stripe webhook endpoint to point at `/api/stripe/webhooks`
+3. Add `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_WHATSAPP_FROM`
+4. Re-run the SQL in [supabase/schema.sql](./supabase/schema.sql) if your Supabase project was created before the newer venue settings / communications / lifecycle additions
+
+Without these provider env vars:
+
+- Stripe checkout buttons remain visible but return a helpful configuration error
+- WhatsApp actions still log communication intent into Sideout, but they do not deliver to a real provider
 
 The bootstrap action creates:
 
@@ -56,15 +82,21 @@ The bootstrap action creates:
 - `/app/bookings` live customer booking surface
 - `/app/wallet` wallet, packs, and value surface
 - `/app/offers` offers, packs, and membership positioning
-- `/sign-in` Supabase magic-link entry point with demo fallback
+- `/sign-in` customer phone OTP + operator magic-link entry point
 - `/admin` operator overview
 - `/admin/schedule` daily schedule and approvals
 - `/admin/customers` customer intelligence and recovery actions
 - `/admin/offers` offers, packs, and commercial control surface
+- `/admin/settings` venue-level policies and public contact configuration
+- `/admin/communications` WhatsApp templates, recovery nudges, and delivery history
+- `/api/stripe/checkout` Stripe Checkout session bootstrap
+- `/api/stripe/webhooks` Stripe webhook ingestion
 
 ## Notes
 
 - Locale assumptions are India-first (`Asia/Kolkata`, INR)
 - Memberships and packs are both represented in the mock model
-- The schema in [supabase/schema.sql](./supabase/schema.sql) includes an auth bridge from `auth.users`, helper functions, live mutation RPCs, and a one-click bootstrap RPC for a seeded venue
-- The authenticated customer/admin surfaces now consume a hybrid runtime snapshot that can come from local demo data or Supabase depending on configuration and sign-in state
+- The schema in [supabase/schema.sql](./supabase/schema.sql) now includes venue settings, booking lifecycle timestamps, communications tables, operator activity logs, Stripe reference fields, live mutation RPCs, and a one-click bootstrap RPC for a seeded venue
+- The authenticated customer/admin surfaces consume a hybrid runtime snapshot that can come from local demo data or Supabase depending on configuration and sign-in state
+- The marketing site now reads live featured availability/offers when a public venue exists in Supabase
+- The customer surface is installable as a PWA via [app/manifest.ts](./app/manifest.ts)

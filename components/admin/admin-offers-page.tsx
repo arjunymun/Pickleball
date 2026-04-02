@@ -15,7 +15,7 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminOffersPage() {
-  const { addWalletCredit, adminDashboard, catalog, resetDemoState } = useSideoutDemo();
+  const { addWalletCredit, adminDashboard, catalog, resetDemoState, sendCommunication } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   const primaryRecoveryTarget = useMemo(() => adminDashboard.atRiskCustomers[0] ?? null, [adminDashboard.atRiskCustomers]);
@@ -93,6 +93,21 @@ export function AdminOffersPage() {
                     }
                   >
                     Issue INR 200 credit
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button px-4 py-2 text-sm"
+                    onClick={() =>
+                      runAction(() =>
+                        sendCommunication(
+                          primaryRecoveryTarget.profile.id,
+                          "template-sunrise-recovery",
+                          `Recovery WhatsApp prepared for ${primaryRecoveryTarget.user.name}.`,
+                        ),
+                      )
+                    }
+                  >
+                    Queue WhatsApp
                   </button>
                   <span className="inline-flex items-center rounded-full bg-[var(--background-strong)] px-4 py-2 text-sm text-[var(--ink-soft)]">
                     Recovery playbook

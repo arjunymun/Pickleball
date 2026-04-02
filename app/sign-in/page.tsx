@@ -10,8 +10,8 @@ export const metadata = {
 export default async function SignInPage() {
   const authState = await getAuthState();
 
-  if (authState.user?.email) {
-    redirect("/app");
+  if (authState.user) {
+    redirect(authState.user.hasAdminAccess ? "/admin" : "/app");
   }
 
   return (

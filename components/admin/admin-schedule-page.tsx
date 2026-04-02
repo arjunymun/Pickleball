@@ -15,7 +15,8 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminSchedulePage() {
-  const { adminDashboard, approveBooking, resetDemoState } = useSideoutDemo();
+  const { adminDashboard, approveBooking, checkInBooking, completeBooking, markBookingNoShow, resetDemoState } =
+    useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   async function runAction(action: () => Promise<string> | string) {
@@ -179,9 +180,34 @@ export function AdminSchedulePage() {
                       >
                         Approve
                       </button>
+                    ) : entry.blockingBooking?.status === "confirmed" ? (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="secondary-button px-4 py-2 text-sm"
+                          onClick={() => runAction(() => checkInBooking(entry.blockingBooking!.id))}
+                        >
+                          Check in
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button px-4 py-2 text-sm"
+                          onClick={() => runAction(() => markBookingNoShow(entry.blockingBooking!.id))}
+                        >
+                          No-show
+                        </button>
+                      </div>
+                    ) : entry.blockingBooking?.status === "checked_in" ? (
+                      <button
+                        type="button"
+                        className="secondary-button px-4 py-2 text-sm"
+                        onClick={() => runAction(() => completeBooking(entry.blockingBooking!.id))}
+                      >
+                        Mark completed
+                      </button>
                     ) : entry.blockingBooking ? (
                       <span className="inline-flex items-center rounded-full bg-[var(--background-strong)] px-4 py-2 text-sm font-medium text-[var(--ink-soft)]">
-                        Customer held
+                        {entry.blockingBooking.status.replaceAll("_", " ")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-[rgba(31,106,84,0.12)] px-4 py-2 text-sm font-medium text-[var(--accent-green)]">

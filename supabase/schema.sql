@@ -4,7 +4,7 @@ create type admin_role_kind as enum ('owner', 'staff');
 create type confirmation_mode as enum ('instant', 'review');
 create type slot_payment_mode as enum ('online', 'pay_at_venue', 'hybrid');
 create type availability_state as enum ('open', 'limited', 'booked');
-create type booking_status as enum ('requested', 'confirmed', 'canceled', 'completed', 'no_show', 'credited');
+create type booking_status as enum ('requested', 'confirmed', 'checked_in', 'canceled', 'completed', 'no_show', 'credited');
 create type booking_payment_status as enum ('pending', 'paid_online', 'pay_at_venue', 'credit_applied');
 create type offer_status as enum ('active', 'scheduled', 'expired');
 create type wallet_entry_kind as enum (
@@ -26,6 +26,19 @@ create table venues (
   story text not null
 );
 
+create table venue_settings (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null unique references venues(id) on delete cascade,
+  cancellation_cutoff_hours integer not null default 6,
+  booking_window_days integer not null default 14,
+  reminder_lead_hours integer[] not null default '{24,2}',
+  public_contact_phone text not null default '',
+  public_contact_email text not null default '',
+  public_whatsapp_number text not null default '',
+  member_discount_percent integer not null default 10,
+  featured_announcement text not null default ''
+);
+
 create table courts (
   id uuid primary key default gen_random_uuid(),
   venue_id uuid not null references venues(id) on delete cascade,
@@ -40,7 +53,8 @@ create table users (
   auth_user_id uuid unique references auth.users(id) on delete cascade,
   full_name text not null,
   email text not null unique,
-  phone text
+  phone text,
+  stripe_customer_id text
 );
 
 create table customer_profiles (
@@ -51,6 +65,10 @@ create table customer_profiles (
   favorite_window text,
   skill_band text,
   tags text[] not null default '{}',
+  phone_e164 text,
+  whatsapp_opt_in boolean not null default true,
+  communication_preference text not null default 'whatsapp',
+  last_contacted_at timestamptz,
   unique (user_id, venue_id)
 );
 
@@ -96,7 +114,13 @@ create table bookings (
   booked_at timestamptz not null default now(),
   status booking_status not null,
   payment_status booking_payment_status not null,
-  attendees integer not null default 1
+  attendees integer not null default 1,
+  confirmed_at timestamptz,
+  checked_in_at timestamptz,
+  completed_at timestamptz,
+  no_show_marked_at timestamptz,
+  canceled_at timestamptz,
+  credited_at timestamptz
 );
 
 create table booking_payments (
@@ -104,7 +128,9 @@ create table booking_payments (
   booking_id uuid not null references bookings(id) on delete cascade,
   amount_inr integer not null,
   mode text not null,
-  status booking_payment_status not null
+  status booking_payment_status not null,
+  stripe_checkout_session_id text,
+  stripe_payment_intent_id text
 );
 
 create table pack_products (
@@ -114,7 +140,8 @@ create table pack_products (
   price_inr integer not null,
   included_credits integer not null,
   valid_days integer not null,
-  description text not null
+  description text not null,
+  stripe_price_id text
 );
 
 create table membership_plans (
@@ -123,7 +150,8 @@ create table membership_plans (
   name text not null,
   monthly_price_inr integer not null,
   included_credits integer not null,
-  perks text[] not null default '{}'
+  perks text[] not null default '{}',
+  stripe_price_id text
 );
 
 create table customer_packs (
@@ -139,7 +167,11 @@ create table customer_memberships (
   customer_id uuid not null references customer_profiles(id) on delete cascade,
   plan_id uuid not null references membership_plans(id) on delete restrict,
   status text not null,
-  renews_at timestamptz not null
+  renews_at timestamptz not null,
+  stripe_subscription_id text,
+  current_period_ends_at timestamptz,
+  cancel_at_period_end boolean not null default false,
+  unique (customer_id, plan_id)
 );
 
 create table wallet_ledger_entries (
@@ -187,6 +219,42 @@ create table customer_notes (
   body text not null
 );
 
+create table operator_activity_log (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  actor_user_id uuid references users(id) on delete set null,
+  customer_id uuid references customer_profiles(id) on delete set null,
+  booking_id uuid references bookings(id) on delete set null,
+  action text not null,
+  detail text not null,
+  created_at timestamptz not null default now()
+);
+
+create table communication_templates (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  slug text not null,
+  channel text not null default 'whatsapp',
+  title text not null,
+  body text not null,
+  unique (venue_id, slug)
+);
+
+create table communication_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  customer_id uuid not null references customer_profiles(id) on delete cascade,
+  booking_id uuid references bookings(id) on delete set null,
+  template_id uuid references communication_templates(id) on delete set null,
+  channel text not null default 'whatsapp',
+  direction text not null default 'outbound',
+  status text not null default 'queued',
+  provider text not null default 'twilio_whatsapp',
+  provider_message_id text,
+  body text not null,
+  sent_at timestamptz not null default now()
+);
+
 create or replace function public.handle_auth_user_created()
 returns trigger
 language plpgsql
@@ -200,9 +268,12 @@ begin
   insert into public.users (auth_user_id, full_name, email, phone)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data ->> 'full_name', split_part(coalesce(new.email, 'player@sideout.club'), '@', 1)),
+    coalesce(
+      new.raw_user_meta_data ->> 'full_name',
+      split_part(coalesce(new.email, concat('player-', coalesce(new.phone, new.id::text), '@sideout.club')), '@', 1)
+    ),
     coalesce(new.email, concat('user-', new.id::text, '@sideout.local')),
-    new.raw_user_meta_data ->> 'phone'
+    coalesce(new.phone, new.raw_user_meta_data ->> 'phone')
   )
   on conflict (email) do update
     set auth_user_id = excluded.auth_user_id,
@@ -217,8 +288,26 @@ begin
   limit 1;
 
   if default_venue_id is not null then
-    insert into public.customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
-    values (created_user_id, default_venue_id, 'Flexible', 'All levels', '{}')
+    insert into public.customer_profiles (
+      user_id,
+      venue_id,
+      favorite_window,
+      skill_band,
+      tags,
+      phone_e164,
+      whatsapp_opt_in,
+      communication_preference
+    )
+    values (
+      created_user_id,
+      default_venue_id,
+      'Flexible',
+      'All levels',
+      '{}',
+      coalesce(new.phone, new.raw_user_meta_data ->> 'phone'),
+      true,
+      'whatsapp'
+    )
     on conflict (user_id, venue_id) do nothing;
   end if;
 
@@ -377,8 +466,15 @@ begin
     else 'paid_online'
   end;
 
-  insert into bookings (slot_id, customer_id, status, payment_status, attendees)
-  values (slot_uuid, customer_profile_id, next_status, next_payment_status, greatest(slot_row.capacity, 1))
+  insert into bookings (slot_id, customer_id, status, payment_status, attendees, confirmed_at)
+  values (
+    slot_uuid,
+    customer_profile_id,
+    next_status,
+    next_payment_status,
+    greatest(slot_row.capacity, 1),
+    case when next_status = 'confirmed' then now() else null end
+  )
   returning id into new_booking_id;
 
   payment_mode_text := case
@@ -455,7 +551,9 @@ begin
   where id = booking_row.slot_id;
 
   update bookings
-  set status = 'canceled'
+  set
+    status = 'canceled',
+    canceled_at = now()
   where id = booking_uuid;
 
   if booking_row.payment_status in ('paid_online', 'credit_applied') then
@@ -533,6 +631,7 @@ begin
   update bookings
   set
     status = 'confirmed',
+    confirmed_at = coalesce(confirmed_at, now()),
     payment_status = case
       when payment_status = 'pending' and slot_row.payment_mode = 'pay_at_venue' then 'pay_at_venue'
       when payment_status = 'pending' then 'paid_online'
@@ -543,6 +642,14 @@ begin
   update bookable_slots
   set availability_state = 'booked'
   where id = booking_row.slot_id;
+
+  perform public.log_operator_activity(
+    slot_venue_id,
+    'booking_approved',
+    concat(slot_row.label, ' confirmed from the operator queue.'),
+    booking_row.customer_id,
+    booking_row.id
+  );
 
   return concat(slot_row.label, ' confirmed from the operator queue.');
 end;
@@ -581,7 +688,363 @@ begin
   insert into wallet_ledger_entries (customer_id, amount_inr, kind, note)
   values (customer_uuid, amount_inr, 'manual_adjustment', note_text);
 
+  perform public.log_operator_activity(
+    profile_row.venue_id,
+    'credit_added',
+    note_text,
+    customer_uuid,
+    null
+  );
+
   return concat('Added ', amount_inr::text, ' INR in venue credit.');
+end;
+$$;
+
+create or replace function public.log_operator_activity(
+  venue_uuid uuid,
+  action_text text,
+  detail_text text,
+  customer_uuid uuid default null,
+  booking_uuid uuid default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into operator_activity_log (venue_id, actor_user_id, customer_id, booking_id, action, detail)
+  values (
+    venue_uuid,
+    public.get_current_app_user_id(),
+    customer_uuid,
+    booking_uuid,
+    action_text,
+    detail_text
+  );
+end;
+$$;
+
+create or replace function public.mark_booking_checked_in_as_admin(booking_uuid uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  booking_row bookings%rowtype;
+  slot_row bookable_slots%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  select * into booking_row from bookings where id = booking_uuid;
+  if booking_row.id is null then
+    raise exception 'Booking not found.';
+  end if;
+
+  select * into slot_row from bookable_slots where id = booking_row.slot_id;
+  if not public.is_admin_for_venue(slot_row.venue_id) then
+    raise exception 'Admin access required.';
+  end if;
+
+  if booking_row.status not in ('confirmed', 'checked_in') then
+    raise exception 'Only confirmed bookings can be checked in.';
+  end if;
+
+  update bookings
+  set
+    status = 'checked_in',
+    checked_in_at = coalesce(checked_in_at, now())
+  where id = booking_uuid;
+
+  perform public.log_operator_activity(
+    slot_row.venue_id,
+    'booking_checked_in',
+    concat(slot_row.label, ' checked in from the operator board.'),
+    booking_row.customer_id,
+    booking_row.id
+  );
+
+  return concat(slot_row.label, ' checked in.');
+end;
+$$;
+
+create or replace function public.mark_booking_completed_as_admin(booking_uuid uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  booking_row bookings%rowtype;
+  slot_row bookable_slots%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  select * into booking_row from bookings where id = booking_uuid;
+  if booking_row.id is null then
+    raise exception 'Booking not found.';
+  end if;
+
+  select * into slot_row from bookable_slots where id = booking_row.slot_id;
+  if not public.is_admin_for_venue(slot_row.venue_id) then
+    raise exception 'Admin access required.';
+  end if;
+
+  if booking_row.status not in ('confirmed', 'checked_in') then
+    raise exception 'Only active bookings can be completed.';
+  end if;
+
+  update bookings
+  set
+    status = 'completed',
+    completed_at = now()
+  where id = booking_uuid;
+
+  perform public.log_operator_activity(
+    slot_row.venue_id,
+    'booking_completed',
+    concat(slot_row.label, ' marked completed.'),
+    booking_row.customer_id,
+    booking_row.id
+  );
+
+  return concat(slot_row.label, ' marked completed.');
+end;
+$$;
+
+create or replace function public.mark_booking_no_show_as_admin(booking_uuid uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  booking_row bookings%rowtype;
+  slot_row bookable_slots%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  select * into booking_row from bookings where id = booking_uuid;
+  if booking_row.id is null then
+    raise exception 'Booking not found.';
+  end if;
+
+  select * into slot_row from bookable_slots where id = booking_row.slot_id;
+  if not public.is_admin_for_venue(slot_row.venue_id) then
+    raise exception 'Admin access required.';
+  end if;
+
+  if booking_row.status not in ('confirmed', 'checked_in') then
+    raise exception 'Only active bookings can be marked no-show.';
+  end if;
+
+  update bookings
+  set
+    status = 'no_show',
+    no_show_marked_at = now()
+  where id = booking_uuid;
+
+  update bookable_slots
+  set availability_state = 'open'
+  where id = booking_row.slot_id;
+
+  perform public.log_operator_activity(
+    slot_row.venue_id,
+    'booking_no_show',
+    concat(slot_row.label, ' marked as no-show.'),
+    booking_row.customer_id,
+    booking_row.id
+  );
+
+  return concat(slot_row.label, ' marked as no-show.');
+end;
+$$;
+
+create or replace function public.add_customer_note_as_admin(customer_uuid uuid, note_body text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  profile_row customer_profiles%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  if coalesce(length(trim(note_body)), 0) = 0 then
+    raise exception 'Note body is required.';
+  end if;
+
+  select * into profile_row from customer_profiles where id = customer_uuid;
+  if profile_row.id is null then
+    raise exception 'Customer profile not found.';
+  end if;
+
+  if not public.is_admin_for_venue(profile_row.venue_id) then
+    raise exception 'Admin access required.';
+  end if;
+
+  insert into customer_notes (customer_id, authored_by, body)
+  values (customer_uuid, 'Sideout operator', trim(note_body));
+
+  perform public.log_operator_activity(
+    profile_row.venue_id,
+    'customer_note_added',
+    trim(note_body),
+    customer_uuid,
+    null
+  );
+
+  return 'Customer note added.';
+end;
+$$;
+
+create or replace function public.update_venue_settings_as_admin(
+  venue_uuid uuid,
+  cancellation_cutoff integer,
+  booking_window integer,
+  reminder_hours integer[],
+  contact_phone text,
+  contact_email text,
+  whatsapp_number text,
+  member_discount integer,
+  announcement_text text
+)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  if not public.is_admin_for_venue(venue_uuid) then
+    raise exception 'Admin access required.';
+  end if;
+
+  insert into venue_settings (
+    venue_id,
+    cancellation_cutoff_hours,
+    booking_window_days,
+    reminder_lead_hours,
+    public_contact_phone,
+    public_contact_email,
+    public_whatsapp_number,
+    member_discount_percent,
+    featured_announcement
+  )
+  values (
+    venue_uuid,
+    greatest(cancellation_cutoff, 1),
+    greatest(booking_window, 1),
+    coalesce(reminder_hours, array[24, 2]),
+    coalesce(contact_phone, ''),
+    coalesce(contact_email, ''),
+    coalesce(whatsapp_number, ''),
+    greatest(member_discount, 0),
+    coalesce(announcement_text, '')
+  )
+  on conflict (venue_id) do update
+    set cancellation_cutoff_hours = excluded.cancellation_cutoff_hours,
+        booking_window_days = excluded.booking_window_days,
+        reminder_lead_hours = excluded.reminder_lead_hours,
+        public_contact_phone = excluded.public_contact_phone,
+        public_contact_email = excluded.public_contact_email,
+        public_whatsapp_number = excluded.public_whatsapp_number,
+        member_discount_percent = excluded.member_discount_percent,
+        featured_announcement = excluded.featured_announcement;
+
+  perform public.log_operator_activity(
+    venue_uuid,
+    'venue_settings_updated',
+    'Venue settings updated from the operator settings surface.',
+    null,
+    null
+  );
+
+  return 'Venue settings updated.';
+end;
+$$;
+
+create or replace function public.log_communication_delivery_as_admin(
+  customer_uuid uuid,
+  template_slug text,
+  message_body text,
+  delivery_status text default 'queued',
+  provider_name text default 'twilio_whatsapp',
+  provider_message text default null
+)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  profile_row customer_profiles%rowtype;
+  template_row communication_templates%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  select * into profile_row from customer_profiles where id = customer_uuid;
+  if profile_row.id is null then
+    raise exception 'Customer profile not found.';
+  end if;
+
+  if not public.is_admin_for_venue(profile_row.venue_id) then
+    raise exception 'Admin access required.';
+  end if;
+
+  select * into template_row
+  from communication_templates
+  where venue_id = profile_row.venue_id
+    and slug = template_slug
+  limit 1;
+
+  insert into communication_deliveries (
+    venue_id,
+    customer_id,
+    template_id,
+    status,
+    provider,
+    provider_message_id,
+    body
+  )
+  values (
+    profile_row.venue_id,
+    customer_uuid,
+    template_row.id,
+    coalesce(delivery_status, 'queued'),
+    coalesce(provider_name, 'twilio_whatsapp'),
+    provider_message,
+    trim(message_body)
+  );
+
+  update customer_profiles
+  set last_contacted_at = now()
+  where id = customer_uuid;
+
+  perform public.log_operator_activity(
+    profile_row.venue_id,
+    'whatsapp_sent',
+    trim(message_body),
+    customer_uuid,
+    null
+  );
+
+  return 'Communication delivery logged.';
 end;
 $$;
 
@@ -664,17 +1127,61 @@ begin
   )
   returning id into venue_id;
 
+  insert into venue_settings (
+    venue_id,
+    cancellation_cutoff_hours,
+    booking_window_days,
+    reminder_lead_hours,
+    public_contact_phone,
+    public_contact_email,
+    public_whatsapp_number,
+    member_discount_percent,
+    featured_announcement
+  )
+  values (
+    venue_id,
+    6,
+    14,
+    array[24, 2],
+    '+91 98765 43110',
+    'play@sideout.club',
+    '+91 98765 43110',
+    10,
+    'Sunrise inventory is the cleanest place to win back off-rhythm regulars.'
+  );
+
   insert into admin_roles (user_id, venue_id, kind)
   values (app_user_id, venue_id, 'owner')
   on conflict (user_id, venue_id) do update
     set kind = 'owner';
 
-  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
-  values (app_user_id, venue_id, 'Sunrise', '3.5 to 4.0', array['owner', 'member', 'weekday regular'])
+  insert into customer_profiles (
+    user_id,
+    venue_id,
+    favorite_window,
+    skill_band,
+    tags,
+    phone_e164,
+    whatsapp_opt_in,
+    communication_preference
+  )
+  values (
+    app_user_id,
+    venue_id,
+    'Sunrise',
+    '3.5 to 4.0',
+    array['owner', 'member', 'weekday regular'],
+    '+91 98765 43110',
+    true,
+    'whatsapp'
+  )
   on conflict (user_id, venue_id) do update
     set favorite_window = excluded.favorite_window,
         skill_band = excluded.skill_band,
-        tags = excluded.tags
+        tags = excluded.tags,
+        phone_e164 = excluded.phone_e164,
+        whatsapp_opt_in = excluded.whatsapp_opt_in,
+        communication_preference = excluded.communication_preference
   returning id into current_profile_id;
 
   insert into users (full_name, email, phone)
@@ -929,6 +1436,37 @@ begin
   )
   returning id into recovery_offer_id;
 
+  insert into communication_templates (venue_id, slug, channel, title, body)
+  values
+    (
+      venue_id,
+      'booking-confirmation',
+      'whatsapp',
+      'Booking confirmation',
+      'You are confirmed for {{slot_label}} on {{slot_date}}. Reply if you need to release the court before cutoff.'
+    ),
+    (
+      venue_id,
+      'review-approved',
+      'whatsapp',
+      'Review hold approved',
+      'Your request for {{slot_label}} has been approved. We will hold the court for you.'
+    ),
+    (
+      venue_id,
+      'sunrise-recovery',
+      'whatsapp',
+      'Sunrise recovery',
+      'We dropped a small recovery credit into your wallet for a sunrise session this week.'
+    ),
+    (
+      venue_id,
+      'membership-renewal',
+      'whatsapp',
+      'Membership renewal',
+      'Your Sideout membership renews soon. We will keep your member pricing and monthly credits active after renewal.'
+    );
+
   insert into users (full_name, email, phone)
   values ('Arav Sharma', 'arav.demo@sideout.club', '+91 98765 43111')
   on conflict (email) do update
@@ -936,12 +1474,21 @@ begin
         phone = excluded.phone
   returning id into arav_user_id;
 
-  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
-  values (arav_user_id, venue_id, 'After work', '4.0', array['prime-time', 'high LTV'])
+  insert into customer_profiles (
+    user_id, venue_id, favorite_window, skill_band, tags, phone_e164, whatsapp_opt_in, communication_preference, last_contacted_at
+  )
+  values (
+    arav_user_id, venue_id, 'After work', '4.0', array['prime-time', 'high LTV'], '+91 98765 43111', true, 'whatsapp',
+    (base_day - 3 + time '18:30') at time zone 'Asia/Kolkata'
+  )
   on conflict (user_id, venue_id) do update
     set favorite_window = excluded.favorite_window,
         skill_band = excluded.skill_band,
-        tags = excluded.tags
+        tags = excluded.tags,
+        phone_e164 = excluded.phone_e164,
+        whatsapp_opt_in = excluded.whatsapp_opt_in,
+        communication_preference = excluded.communication_preference,
+        last_contacted_at = excluded.last_contacted_at
   returning id into arav_profile_id;
 
   insert into users (full_name, email, phone)
@@ -951,12 +1498,21 @@ begin
         phone = excluded.phone
   returning id into meera_user_id;
 
-  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
-  values (meera_user_id, venue_id, 'Sunset', '3.0', array['pack holder', 'at-risk'])
+  insert into customer_profiles (
+    user_id, venue_id, favorite_window, skill_band, tags, phone_e164, whatsapp_opt_in, communication_preference, last_contacted_at
+  )
+  values (
+    meera_user_id, venue_id, 'Sunset', '3.0', array['pack holder', 'at-risk'], '+91 98765 43112', true, 'whatsapp',
+    (base_day - 5 + time '09:10') at time zone 'Asia/Kolkata'
+  )
   on conflict (user_id, venue_id) do update
     set favorite_window = excluded.favorite_window,
         skill_band = excluded.skill_band,
-        tags = excluded.tags
+        tags = excluded.tags,
+        phone_e164 = excluded.phone_e164,
+        whatsapp_opt_in = excluded.whatsapp_opt_in,
+        communication_preference = excluded.communication_preference,
+        last_contacted_at = excluded.last_contacted_at
   returning id into meera_profile_id;
 
   insert into users (full_name, email, phone)
@@ -966,12 +1522,21 @@ begin
         phone = excluded.phone
   returning id into kabir_user_id;
 
-  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
-  values (kabir_user_id, venue_id, 'Weekend mornings', '4.0+', array['member', 'brings guests'])
+  insert into customer_profiles (
+    user_id, venue_id, favorite_window, skill_band, tags, phone_e164, whatsapp_opt_in, communication_preference, last_contacted_at
+  )
+  values (
+    kabir_user_id, venue_id, 'Weekend mornings', '4.0+', array['member', 'brings guests'], '+91 98765 43113', true, 'whatsapp',
+    (base_day - 2 + time '19:00') at time zone 'Asia/Kolkata'
+  )
   on conflict (user_id, venue_id) do update
     set favorite_window = excluded.favorite_window,
         skill_band = excluded.skill_band,
-        tags = excluded.tags
+        tags = excluded.tags,
+        phone_e164 = excluded.phone_e164,
+        whatsapp_opt_in = excluded.whatsapp_opt_in,
+        communication_preference = excluded.communication_preference,
+        last_contacted_at = excluded.last_contacted_at
   returning id into kabir_profile_id;
 
   insert into users (full_name, email, phone)
@@ -981,12 +1546,19 @@ begin
         phone = excluded.phone
   returning id into tara_user_id;
 
-  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
-  values (tara_user_id, venue_id, 'Flexible', 'Beginner', array['new player', 'promo-converted'])
+  insert into customer_profiles (
+    user_id, venue_id, favorite_window, skill_band, tags, phone_e164, whatsapp_opt_in, communication_preference
+  )
+  values (
+    tara_user_id, venue_id, 'Flexible', 'Beginner', array['new player', 'promo-converted'], '+91 98765 43114', true, 'whatsapp'
+  )
   on conflict (user_id, venue_id) do update
     set favorite_window = excluded.favorite_window,
         skill_band = excluded.skill_band,
-        tags = excluded.tags
+        tags = excluded.tags,
+        phone_e164 = excluded.phone_e164,
+        whatsapp_opt_in = excluded.whatsapp_opt_in,
+        communication_preference = excluded.communication_preference
   returning id into tara_profile_id;
 
   insert into wallet_ledger_entries (customer_id, amount_inr, kind, note)
@@ -1003,19 +1575,32 @@ begin
     (current_profile_id, commuter_pack_id, 5, ((base_day + 34) + time '23:00') at time zone 'Asia/Kolkata'),
     (meera_profile_id, weekday_pack_id, 2, ((base_day + 5) + time '23:00') at time zone 'Asia/Kolkata');
 
-  insert into customer_memberships (customer_id, plan_id, status, renews_at)
+  insert into customer_memberships (customer_id, plan_id, status, renews_at, current_period_ends_at)
   values
-    (current_profile_id, club_pass_id, 'active', ((base_day + 28) + time '00:00') at time zone 'Asia/Kolkata'),
-    (kabir_profile_id, pro_pass_id, 'active', ((base_day + 21) + time '00:00') at time zone 'Asia/Kolkata');
+    (
+      current_profile_id,
+      club_pass_id,
+      'active',
+      ((base_day + 28) + time '00:00') at time zone 'Asia/Kolkata',
+      ((base_day + 28) + time '00:00') at time zone 'Asia/Kolkata'
+    ),
+    (
+      kabir_profile_id,
+      pro_pass_id,
+      'active',
+      ((base_day + 21) + time '00:00') at time zone 'Asia/Kolkata',
+      ((base_day + 21) + time '00:00') at time zone 'Asia/Kolkata'
+    );
 
-  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees)
+  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees, confirmed_at)
   values (
     slot_3_id,
     current_profile_id,
     ((base_day - 2) + time '09:30') at time zone 'Asia/Kolkata',
     'confirmed',
     'credit_applied',
-    4
+    4,
+    ((base_day - 2) + time '09:30') at time zone 'Asia/Kolkata'
   )
   returning id into current_booking_id;
 
@@ -1025,14 +1610,15 @@ begin
   insert into wallet_ledger_entries (customer_id, amount_inr, kind, note)
   values (current_profile_id, -900, 'credit_spent', 'Applied to Prime-Time Court');
 
-  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees)
+  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees, confirmed_at)
   values (
     slot_4_id,
     arav_profile_id,
     ((base_day - 3) + time '11:00') at time zone 'Asia/Kolkata',
     'confirmed',
     'paid_online',
-    4
+    4,
+    ((base_day - 3) + time '11:00') at time zone 'Asia/Kolkata'
   )
   returning id into arav_booking_id;
 
@@ -1059,14 +1645,15 @@ begin
     2
   );
 
-  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees)
+  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees, completed_at)
   values (
     slot_6_id,
     kabir_profile_id,
     ((base_day - 5) + time '08:00') at time zone 'Asia/Kolkata',
     'completed',
     'paid_online',
-    4
+    4,
+    ((base_day - 1) + time '19:05') at time zone 'Asia/Kolkata'
   )
   returning id into kabir_booking_id;
 
@@ -1088,11 +1675,75 @@ begin
     (sunrise_offer_id, meera_profile_id, ((base_day - 1) + time '07:00') at time zone 'Asia/Kolkata', 200),
     (member_offer_id, kabir_profile_id, ((base_day - 2) + time '19:00') at time zone 'Asia/Kolkata', 250);
 
+  insert into communication_deliveries (venue_id, customer_id, booking_id, template_id, status, provider, provider_message_id, body, sent_at)
+  values
+    (
+      venue_id,
+      current_profile_id,
+      current_booking_id,
+      (
+        select id from communication_templates
+        where communication_templates.venue_id = venue_id and slug = 'booking-confirmation'
+        limit 1
+      ),
+      'delivered',
+      'twilio_whatsapp',
+      'demo-msg-001',
+      'You are confirmed for Prime-Time Court tomorrow.',
+      ((base_day - 2) + time '09:31') at time zone 'Asia/Kolkata'
+    ),
+    (
+      venue_id,
+      meera_profile_id,
+      null,
+      (
+        select id from communication_templates
+        where communication_templates.venue_id = venue_id and slug = 'sunrise-recovery'
+        limit 1
+      ),
+      'sent',
+      'twilio_whatsapp',
+      'demo-msg-002',
+      'We dropped a sunrise recovery credit into your wallet.',
+      ((base_day - 1) + time '09:10') at time zone 'Asia/Kolkata'
+    );
+
+  insert into operator_activity_log (venue_id, actor_user_id, customer_id, booking_id, action, detail, created_at)
+  values
+    (
+      venue_id,
+      app_user_id,
+      current_profile_id,
+      current_booking_id,
+      'booking_approved',
+      'Prime-Time Court confirmed from the operator queue.',
+      ((base_day - 2) + time '09:32') at time zone 'Asia/Kolkata'
+    ),
+    (
+      venue_id,
+      app_user_id,
+      meera_profile_id,
+      null,
+      'credit_added',
+      'Sunset recovery credit added for a lapsed pack holder.',
+      ((base_day - 1) + time '09:12') at time zone 'Asia/Kolkata'
+    ),
+    (
+      venue_id,
+      app_user_id,
+      meera_profile_id,
+      null,
+      'whatsapp_sent',
+      'We dropped a sunrise recovery credit into your wallet.',
+      ((base_day - 1) + time '09:13') at time zone 'Asia/Kolkata'
+    );
+
   return 'Live Sideout venue initialized. Customer and admin routes are now backed by seeded Supabase data.';
 end;
 $$;
 
 alter table venues enable row level security;
+alter table venue_settings enable row level security;
 alter table courts enable row level security;
 alter table users enable row level security;
 alter table customer_profiles enable row level security;
@@ -1110,8 +1761,14 @@ alter table offers enable row level security;
 alter table offer_redemptions enable row level security;
 alter table attendance_events enable row level security;
 alter table customer_notes enable row level security;
+alter table operator_activity_log enable row level security;
+alter table communication_templates enable row level security;
+alter table communication_deliveries enable row level security;
 
 create policy "venues are publicly readable" on venues
+  for select using (true);
+
+create policy "venue settings are publicly readable" on venue_settings
   for select using (true);
 
 create policy "courts are publicly readable" on courts
@@ -1221,3 +1878,12 @@ create policy "customers can read their own customer notes" on customer_notes
 
 create policy "admins can read venue customer notes" on customer_notes
   for select using (public.is_admin_for_customer(customer_id));
+
+create policy "admins can read operator activity" on operator_activity_log
+  for select using (public.is_admin_for_venue(venue_id));
+
+create policy "admins can read communication templates" on communication_templates
+  for select using (public.is_admin_for_venue(venue_id));
+
+create policy "admins can read communication deliveries" on communication_deliveries
+  for select using (public.is_admin_for_venue(venue_id));

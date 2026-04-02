@@ -5,6 +5,7 @@ export type AvailabilityState = "open" | "limited" | "booked";
 export type BookingStatus =
   | "requested"
   | "confirmed"
+  | "checked_in"
   | "canceled"
   | "completed"
   | "no_show"
@@ -33,6 +34,19 @@ export interface Venue {
   story: string;
 }
 
+export interface VenueSettings {
+  id: string;
+  venueId: string;
+  cancellationCutoffHours: number;
+  bookingWindowDays: number;
+  reminderLeadHours: number[];
+  publicContactPhone: string;
+  publicContactEmail: string;
+  publicWhatsappNumber: string;
+  memberDiscountPercent: number;
+  featuredAnnouncement: string;
+}
+
 export interface Court {
   id: string;
   name: string;
@@ -46,6 +60,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
+  stripeCustomerId?: string | null;
 }
 
 export interface CustomerProfile {
@@ -55,6 +70,10 @@ export interface CustomerProfile {
   favoriteWindow: string;
   skillBand: string;
   tags: string[];
+  phoneE164?: string | null;
+  whatsappOptIn?: boolean;
+  communicationPreference?: "whatsapp" | "sms" | "email";
+  lastContactedAt?: string | null;
 }
 
 export interface AdminRole {
@@ -97,6 +116,12 @@ export interface Booking {
   status: BookingStatus;
   paymentStatus: BookingPaymentStatus;
   attendees: number;
+  confirmedAt?: string | null;
+  checkedInAt?: string | null;
+  completedAt?: string | null;
+  noShowMarkedAt?: string | null;
+  canceledAt?: string | null;
+  creditedAt?: string | null;
 }
 
 export interface BookingPayment {
@@ -105,6 +130,8 @@ export interface BookingPayment {
   amountInr: number;
   mode: SlotPaymentMode | "wallet";
   status: BookingPaymentStatus;
+  stripeCheckoutSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
 }
 
 export interface PackProduct {
@@ -114,6 +141,7 @@ export interface PackProduct {
   includedCredits: number;
   validDays: number;
   description: string;
+  stripePriceId?: string | null;
 }
 
 export interface MembershipPlan {
@@ -122,6 +150,7 @@ export interface MembershipPlan {
   monthlyPriceInr: number;
   includedCredits: number;
   perks: string[];
+  stripePriceId?: string | null;
 }
 
 export interface CustomerPack {
@@ -138,6 +167,9 @@ export interface CustomerMembership {
   planId: string;
   status: "active" | "paused" | "expired";
   renewsAt: string;
+  stripeSubscriptionId?: string | null;
+  currentPeriodEndsAt?: string | null;
+  cancelAtPeriodEnd?: boolean;
 }
 
 export interface WalletLedgerEntry {
@@ -182,4 +214,39 @@ export interface CustomerNote {
   authoredBy: string;
   createdAt: string;
   body: string;
+}
+
+export interface OperatorActivityLog {
+  id: string;
+  venueId: string;
+  actorUserId: string | null;
+  customerId: string | null;
+  bookingId: string | null;
+  action: string;
+  detail: string;
+  createdAt: string;
+}
+
+export interface CommunicationTemplate {
+  id: string;
+  venueId: string;
+  slug: string;
+  channel: "whatsapp";
+  title: string;
+  body: string;
+}
+
+export interface CommunicationDelivery {
+  id: string;
+  venueId: string;
+  customerId: string;
+  bookingId: string | null;
+  templateId: string | null;
+  channel: "whatsapp";
+  direction: "outbound";
+  status: "queued" | "sent" | "delivered" | "failed";
+  provider: string;
+  providerMessageId: string | null;
+  body: string;
+  sentAt: string;
 }
