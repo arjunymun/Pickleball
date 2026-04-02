@@ -48,8 +48,8 @@ export default async function AdminLayout({
         <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <PreviewNav items={adminNavItems} inverted />
           <p className="max-w-2xl text-sm leading-7 text-white/65">
-            The operator side keeps its multi-route control-room feel, but version 1.3 now makes the shell aware of
-            real auth state and ready for Supabase-backed role routing.
+            The operator side keeps its control-room feel, and version 1.5 can now initialize a live Supabase venue so
+            the admin routes run on seeded real records instead of just the local demo shell.
           </p>
         </div>
         {children}

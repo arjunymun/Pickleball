@@ -1,5 +1,6 @@
 import {
   createSeedDemoState,
+  getCommercialCatalog,
   getAdminDashboard,
   getCustomerExperience,
   type AdminDashboardSnapshot,
@@ -36,6 +37,7 @@ function getDemoSnapshot(): RuntimeSnapshot {
     source: "demo",
     customerExperience: getCustomerExperience(state),
     adminDashboard: getAdminDashboard(state),
+    catalog: getCommercialCatalog(),
     capabilities: {
       customerLive: false,
       adminLive: false,
@@ -601,9 +603,17 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
   const customerProfileRows = customerProfileRowsRaw ?? [];
   const adminRoleRows = adminRoleRowsRaw ?? [];
 
+  const ownerAdminRoleRow = adminRoleRows.find((row) => row.kind === "owner") as
+    | Record<string, unknown>
+    | undefined;
+  const staffAdminRoleRow = adminRoleRows.find((row) => row.kind === "staff") as
+    | Record<string, unknown>
+    | undefined;
+
   const activeVenueId =
-    (customerProfileRows[0]?.venue_id as string | undefined) ??
-    (adminRoleRows[0]?.venue_id as string | undefined);
+    (ownerAdminRoleRow?.venue_id as string | undefined) ??
+    (staffAdminRoleRow?.venue_id as string | undefined) ??
+    (customerProfileRows[0]?.venue_id as string | undefined);
 
   if (!activeVenueId) {
     return demoSnapshot;
@@ -742,6 +752,11 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
     source: "supabase",
     customerExperience: customerExperience ?? demoSnapshot.customerExperience,
     adminDashboard: adminDashboard ?? demoSnapshot.adminDashboard,
+    catalog: {
+      offers,
+      packProducts,
+      membershipPlans,
+    },
     capabilities: {
       customerLive: Boolean(customerExperience),
       adminLive: Boolean(adminDashboard),

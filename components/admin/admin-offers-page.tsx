@@ -7,7 +7,6 @@ import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatVenueDate } from "@/lib/formatters";
-import { membershipPlans, offers, packProducts } from "@/lib/mock-data";
 import { getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
 
 const initialNotice: NoticeState = {
@@ -16,7 +15,7 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminOffersPage() {
-  const { addWalletCredit, adminDashboard, resetDemoState } = useSideoutDemo();
+  const { addWalletCredit, adminDashboard, catalog, resetDemoState } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   const primaryRecoveryTarget = useMemo(() => adminDashboard.atRiskCustomers[0] ?? null, [adminDashboard.atRiskCustomers]);
@@ -143,7 +142,7 @@ export function AdminOffersPage() {
               description="Operators should understand why each offer exists in the schedule, not just whether a discount is live."
             />
             <div className="mt-8 grid gap-4">
-              {offers.map((offer) => (
+              {catalog.offers.map((offer) => (
                 <article key={offer.id} className="rounded-[1.5rem] border border-[var(--line-soft)] bg-white/75 p-5">
                   <div className="flex items-center gap-3">
                     {offer.status === "active" ? (
@@ -175,7 +174,7 @@ export function AdminOffersPage() {
             <article className="surface-card rounded-[2rem] p-6">
               <p className="section-eyebrow">Pack products</p>
               <div className="mt-5 grid gap-4">
-                {packProducts.map((pack) => (
+                {catalog.packProducts.map((pack) => (
                   <div key={pack.id} className="rounded-[1.3rem] bg-white/70 p-4">
                     <div className="flex items-center gap-3">
                       <Ticket className="h-5 w-5 text-[var(--accent)]" />
@@ -192,7 +191,7 @@ export function AdminOffersPage() {
             <article className="surface-card rounded-[2rem] p-6">
               <p className="section-eyebrow">Membership products</p>
               <div className="mt-5 grid gap-4">
-                {membershipPlans.map((plan) => (
+                {catalog.membershipPlans.map((plan) => (
                   <div key={plan.id} className="rounded-[1.3rem] bg-white/70 p-4">
                     <div className="flex items-center gap-3">
                       <Sparkles className="h-5 w-5 text-[var(--accent-green)]" />

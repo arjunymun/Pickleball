@@ -17,7 +17,7 @@ type SubmitState = {
 
 const initialSubmitState: SubmitState = {
   tone: "idle",
-  message: "Use a real Supabase project to send a magic link or create password-based auth in the next iteration.",
+  message: "Use a real Supabase project to send a magic link. After signing in, initialize the live Sideout venue from /app or /admin.",
 };
 
 export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
@@ -130,7 +130,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
               <p className="font-medium text-white">Next backend step</p>
             </div>
             <p className="mt-3 text-sm leading-7 text-white/70">
-              After auth, the next upgrade is swapping the live demo store for real Supabase queries and role-aware mutations.
+              After auth, initialize the live venue dataset and Sideout will switch the customer and operator routes onto real Supabase records.
             </p>
           </article>
           <a

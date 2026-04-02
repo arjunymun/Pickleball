@@ -1,5 +1,6 @@
 "use client";
 
+import type { Session as SupabaseSession, User as SupabaseUser } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import {
@@ -9,6 +10,7 @@ import {
   cancelBooking as applyCancelBooking,
   createSeedDemoState,
   DEMO_STATE_VERSION,
+  getCommercialCatalog,
   getAdminDashboard,
   getCustomerExperience,
   type DemoState,
@@ -137,6 +139,7 @@ function createDemoRuntimeSnapshot(state: DemoState, customerId = PREVIEW_CUSTOM
     source: "demo",
     customerExperience: getCustomerExperience(state, customerId),
     adminDashboard: getAdminDashboard(state),
+    catalog: getCommercialCatalog(),
     capabilities: {
       customerLive: false,
       adminLive: false,
@@ -204,18 +207,27 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const demoSnapshot = useMemo(() => createDemoRuntimeSnapshot(state, customerId), [customerId, state]);
   const [runtimeSnapshot, setRuntimeSnapshot] = useState<RuntimeSnapshot | null>(null);
-
-  const isSupabaseConfigured = useMemo(() => Boolean(getSupabasePublicEnv()), []);
+  const [authStatus, setAuthStatus] = useState<"loading" | "signed_in" | "signed_out">(
+    Boolean(getSupabasePublicEnv()) ? "loading" : "signed_out",
+  );
+  const hasSupabaseEnv = useMemo(() => Boolean(getSupabasePublicEnv()), []);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    if (!hasSupabaseEnv) {
       return;
     }
 
     const supabase = createBrowserSupabaseClient();
     let isActive = true;
 
-    async function syncRuntimeSnapshot() {
+    async function syncRuntimeSnapshot(nextStatus?: "signed_in" | "signed_out") {
+      if (nextStatus === "signed_out") {
+        if (isActive) {
+          setRuntimeSnapshot(null);
+        }
+        return;
+      }
+
       try {
         const nextSnapshot = await fetchRuntimeSnapshot();
         if (isActive) {
@@ -228,23 +240,40 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       }
     }
 
-    void syncRuntimeSnapshot();
+    void supabase.auth.getUser().then((result: { data: { user: SupabaseUser | null } }) => {
+      const user = result.data.user;
+
+      if (!isActive) {
+        return;
+      }
+
+      const nextStatus = user ? "signed_in" : "signed_out";
+      setAuthStatus(nextStatus);
+      void syncRuntimeSnapshot(nextStatus);
+    });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      void syncRuntimeSnapshot();
+    } = supabase.auth.onAuthStateChange((_event: string, session: SupabaseSession | null) => {
+      const nextStatus = session?.user ? "signed_in" : "signed_out";
+
+      if (isActive) {
+        setAuthStatus(nextStatus);
+      }
+
+      void syncRuntimeSnapshot(nextStatus);
     });
 
     return () => {
       isActive = false;
       subscription.unsubscribe();
     };
-  }, [isSupabaseConfigured]);
+  }, [hasSupabaseEnv]);
 
   const activeSnapshot = runtimeSnapshot?.source === "supabase" ? runtimeSnapshot : demoSnapshot;
   const customerExperience = activeSnapshot.customerExperience;
   const adminDashboard = activeSnapshot.adminDashboard;
+  const catalog = activeSnapshot.catalog;
 
   async function bookSlot(slotId: string) {
     if (activeSnapshot.source === "supabase") {
@@ -308,6 +337,20 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
     return runMutation((draft) => applyWalletCredit(draft, targetCustomerId, amountInr, note));
   }
 
+  async function bootstrapVenue() {
+    if (!hasSupabaseEnv) {
+      throw new Error("Supabase environment variables are missing. Add them in .env.local first.");
+    }
+
+    if (authStatus !== "signed_in") {
+      throw new Error("Sign in with Supabase before initializing a live Sideout venue.");
+    }
+
+    const payload = await postRuntimeMutation("/api/runtime/bootstrap");
+    setRuntimeSnapshot(payload.snapshot);
+    return payload.message;
+  }
+
   async function reset() {
     if (activeSnapshot.source === "supabase") {
       return "Live Supabase mode is active. Demo reset is only available when Sideout is running in demo mode.";
@@ -318,14 +361,17 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
 
   return {
     runtimeSource: activeSnapshot.source,
-    isSupabaseConfigured,
+    isSupabaseConfigured: hasSupabaseEnv,
+    authStatus,
     customerExperience,
     adminDashboard,
+    catalog,
     capabilities: activeSnapshot.capabilities,
     bookSlot,
     cancelBooking,
     approveBooking,
     addWalletCredit,
+    bootstrapVenue,
     resetDemoState: reset,
   };
 }

@@ -585,6 +585,513 @@ begin
 end;
 $$;
 
+create or replace function public.bootstrap_sideout_demo_for_current_user()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  app_user_id uuid;
+  existing_admin_venue_id uuid;
+  venue_id uuid;
+  base_day date;
+  current_profile_id uuid;
+  court_1_id uuid;
+  court_2_id uuid;
+  court_3_id uuid;
+  court_4_id uuid;
+  court_5_id uuid;
+  sunrise_template_id uuid;
+  prime_template_id uuid;
+  club_template_id uuid;
+  weekday_pack_id uuid;
+  commuter_pack_id uuid;
+  club_pass_id uuid;
+  pro_pass_id uuid;
+  sunrise_offer_id uuid;
+  member_offer_id uuid;
+  recovery_offer_id uuid;
+  slot_1_id uuid;
+  slot_2_id uuid;
+  slot_3_id uuid;
+  slot_4_id uuid;
+  slot_5_id uuid;
+  slot_6_id uuid;
+  current_booking_id uuid;
+  arav_booking_id uuid;
+  arav_user_id uuid;
+  arav_profile_id uuid;
+  meera_user_id uuid;
+  meera_profile_id uuid;
+  kabir_user_id uuid;
+  kabir_profile_id uuid;
+  tara_user_id uuid;
+  tara_profile_id uuid;
+  staff_user_id uuid;
+  kabir_booking_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  app_user_id := public.get_current_app_user_id();
+
+  if app_user_id is null then
+    raise exception 'User profile not provisioned yet. Try signing out and back in again.';
+  end if;
+
+  select admin_roles.venue_id
+  into existing_admin_venue_id
+  from admin_roles
+  where admin_roles.user_id = app_user_id
+  order by case when admin_roles.kind = 'owner' then 0 else 1 end
+  limit 1;
+
+  if existing_admin_venue_id is not null then
+    return 'Sideout live venue is already initialized for this account.';
+  end if;
+
+  base_day := timezone('Asia/Kolkata', now())::date + 1;
+
+  insert into venues (name, tagline, location, timezone, story)
+  values (
+    'Sideout Club',
+    'Repeat-play software shaped from a real family-built venue.',
+    'Dehradun, Uttarakhand',
+    'Asia/Kolkata',
+    'Five courts, warm foothill mornings, and a business that runs better when booking, retention, and member value live in one system.'
+  )
+  returning id into venue_id;
+
+  insert into admin_roles (user_id, venue_id, kind)
+  values (app_user_id, venue_id, 'owner')
+  on conflict (user_id, venue_id) do update
+    set kind = 'owner';
+
+  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
+  values (app_user_id, venue_id, 'Sunrise', '3.5 to 4.0', array['owner', 'member', 'weekday regular'])
+  on conflict (user_id, venue_id) do update
+    set favorite_window = excluded.favorite_window,
+        skill_band = excluded.skill_band,
+        tags = excluded.tags
+  returning id into current_profile_id;
+
+  insert into users (full_name, email, phone)
+  values ('Naina Joshi', 'ops@sideout.club', '+91 98765 43116')
+  on conflict (email) do update
+    set full_name = excluded.full_name,
+        phone = excluded.phone
+  returning id into staff_user_id;
+
+  insert into admin_roles (user_id, venue_id, kind)
+  values (staff_user_id, venue_id, 'staff')
+  on conflict (user_id, venue_id) do update
+    set kind = 'staff';
+
+  insert into courts (venue_id, name, surface, lighting, outlook)
+  values (venue_id, 'Court 01', 'Outdoor acrylic', true, 'East light')
+  returning id into court_1_id;
+
+  insert into courts (venue_id, name, surface, lighting, outlook)
+  values (venue_id, 'Court 02', 'Outdoor acrylic', true, 'Main deck')
+  returning id into court_2_id;
+
+  insert into courts (venue_id, name, surface, lighting, outlook)
+  values (venue_id, 'Court 03', 'Outdoor acrylic', true, 'Tree line')
+  returning id into court_3_id;
+
+  insert into courts (venue_id, name, surface, lighting, outlook)
+  values (venue_id, 'Court 04', 'Outdoor acrylic', true, 'Quiet side')
+  returning id into court_4_id;
+
+  insert into courts (venue_id, name, surface, lighting, outlook)
+  values (venue_id, 'Court 05', 'Outdoor acrylic', false, 'Practice edge')
+  returning id into court_5_id;
+
+  insert into slot_templates (venue_id, name, duration_minutes, confirmation_mode, payment_mode, price_inr, description)
+  values (
+    venue_id,
+    'Sunrise Rally',
+    60,
+    'instant',
+    'online',
+    700,
+    'Fast morning bookings designed to fill before work.'
+  )
+  returning id into sunrise_template_id;
+
+  insert into slot_templates (venue_id, name, duration_minutes, confirmation_mode, payment_mode, price_inr, description)
+  values (
+    venue_id,
+    'Prime-Time Court',
+    60,
+    'instant',
+    'hybrid',
+    900,
+    'High-demand evening court with member perks and wallet support.'
+  )
+  returning id into prime_template_id;
+
+  insert into slot_templates (venue_id, name, duration_minutes, confirmation_mode, payment_mode, price_inr, description)
+  values (
+    venue_id,
+    'Club Hold',
+    60,
+    'review',
+    'pay_at_venue',
+    850,
+    'Manually reviewed holds for staff-led or high-touch requests.'
+  )
+  returning id into club_template_id;
+
+  insert into bookable_slots (
+    venue_id, template_id, court_id, starts_at, ends_at, duration_minutes, capacity, price_inr, payment_mode, confirmation_mode, availability_state, label
+  )
+  values (
+    venue_id,
+    sunrise_template_id,
+    court_1_id,
+    (base_day + time '06:00') at time zone 'Asia/Kolkata',
+    (base_day + time '07:00') at time zone 'Asia/Kolkata',
+    60,
+    4,
+    700,
+    'online',
+    'instant',
+    'open',
+    'Sunrise Rally'
+  )
+  returning id into slot_1_id;
+
+  insert into bookable_slots (
+    venue_id, template_id, court_id, starts_at, ends_at, duration_minutes, capacity, price_inr, payment_mode, confirmation_mode, availability_state, label
+  )
+  values (
+    venue_id,
+    sunrise_template_id,
+    court_2_id,
+    (base_day + time '06:00') at time zone 'Asia/Kolkata',
+    (base_day + time '07:00') at time zone 'Asia/Kolkata',
+    60,
+    4,
+    700,
+    'online',
+    'instant',
+    'booked',
+    'Sunrise Rally'
+  )
+  returning id into slot_2_id;
+
+  insert into bookable_slots (
+    venue_id, template_id, court_id, starts_at, ends_at, duration_minutes, capacity, price_inr, payment_mode, confirmation_mode, availability_state, label
+  )
+  values (
+    venue_id,
+    prime_template_id,
+    court_3_id,
+    (base_day + time '18:00') at time zone 'Asia/Kolkata',
+    (base_day + time '19:00') at time zone 'Asia/Kolkata',
+    60,
+    4,
+    900,
+    'hybrid',
+    'instant',
+    'booked',
+    'Prime-Time Court'
+  )
+  returning id into slot_3_id;
+
+  insert into bookable_slots (
+    venue_id, template_id, court_id, starts_at, ends_at, duration_minutes, capacity, price_inr, payment_mode, confirmation_mode, availability_state, label
+  )
+  values (
+    venue_id,
+    prime_template_id,
+    court_4_id,
+    (base_day + time '19:00') at time zone 'Asia/Kolkata',
+    (base_day + time '20:00') at time zone 'Asia/Kolkata',
+    60,
+    4,
+    950,
+    'hybrid',
+    'instant',
+    'booked',
+    'Golden Hour Court'
+  )
+  returning id into slot_4_id;
+
+  insert into bookable_slots (
+    venue_id, template_id, court_id, starts_at, ends_at, duration_minutes, capacity, price_inr, payment_mode, confirmation_mode, availability_state, label
+  )
+  values (
+    venue_id,
+    club_template_id,
+    court_5_id,
+    ((base_day + 1) + time '07:00') at time zone 'Asia/Kolkata',
+    ((base_day + 1) + time '08:00') at time zone 'Asia/Kolkata',
+    60,
+    4,
+    850,
+    'pay_at_venue',
+    'review',
+    'booked',
+    'Coach Hold'
+  )
+  returning id into slot_5_id;
+
+  insert into bookable_slots (
+    venue_id, template_id, court_id, starts_at, ends_at, duration_minutes, capacity, price_inr, payment_mode, confirmation_mode, availability_state, label
+  )
+  values (
+    venue_id,
+    prime_template_id,
+    court_2_id,
+    ((base_day + 1) + time '18:00') at time zone 'Asia/Kolkata',
+    ((base_day + 1) + time '19:00') at time zone 'Asia/Kolkata',
+    60,
+    4,
+    900,
+    'hybrid',
+    'instant',
+    'limited',
+    'Prime-Time Court'
+  )
+  returning id into slot_6_id;
+
+  insert into pack_products (venue_id, name, price_inr, included_credits, valid_days, description)
+  values (venue_id, 'Weekday Starter Pack', 2400, 4, 30, 'A weekday-focused credit pack for sunrise and quiet-hour return visits.')
+  returning id into weekday_pack_id;
+
+  insert into pack_products (venue_id, name, price_inr, included_credits, valid_days, description)
+  values (venue_id, 'Commuter Flex Pack', 4600, 8, 45, 'A higher-balance pack for players who bounce between sunrise and after-work courts.')
+  returning id into commuter_pack_id;
+
+  insert into membership_plans (venue_id, name, monthly_price_inr, included_credits, perks)
+  values (
+    venue_id,
+    'Club Pass',
+    1800,
+    2,
+    array['Priority booking on prime-time holds', '10% lower member rate', 'Exclusive sunrise offers']
+  )
+  returning id into club_pass_id;
+
+  insert into membership_plans (venue_id, name, monthly_price_inr, included_credits, perks)
+  values (
+    venue_id,
+    'Club Pass Plus',
+    3200,
+    4,
+    array['Prime-time booking priority', 'Monthly recovery credit', 'Member-only golden hour drops']
+  )
+  returning id into pro_pass_id;
+
+  insert into offers (venue_id, name, status, starts_at, ends_at, headline, audience, redemption_cap, slot_scope)
+  values (
+    venue_id,
+    'Sunrise Recovery',
+    'active',
+    (base_day - 1 + time '00:00') at time zone 'Asia/Kolkata',
+    (base_day + 5 + time '23:00') at time zone 'Asia/Kolkata',
+    'Bring back off-rhythm regulars with a sunrise credit that feels thoughtful, not discount-first.',
+    'Targets players who used to visit before work but have gone quiet for 7+ days.',
+    20,
+    'Applies to sunrise inventory only.'
+  )
+  returning id into sunrise_offer_id;
+
+  insert into offers (venue_id, name, status, starts_at, ends_at, headline, audience, redemption_cap, slot_scope)
+  values (
+    venue_id,
+    'Member Golden Hour',
+    'active',
+    (base_day - 1 + time '00:00') at time zone 'Asia/Kolkata',
+    (base_day + 10 + time '23:00') at time zone 'Asia/Kolkata',
+    'Reward active members with a cleaner path into the venue''s best evening inventory.',
+    'Visible to members and high-retention players already trending toward repeat play.',
+    12,
+    'Applies to prime-time and golden-hour courts.'
+  )
+  returning id into member_offer_id;
+
+  insert into offers (venue_id, name, status, starts_at, ends_at, headline, audience, redemption_cap, slot_scope)
+  values (
+    venue_id,
+    'First Pack Top-Up',
+    'scheduled',
+    (base_day + 2 + time '00:00') at time zone 'Asia/Kolkata',
+    (base_day + 12 + time '23:00') at time zone 'Asia/Kolkata',
+    'Convert new players into pack holders without flattening the pricing story for everyone else.',
+    'Targets recent first-time players and promo-converted members of the venue.',
+    15,
+    'Applies to any open weekday slot after the second visit.'
+  )
+  returning id into recovery_offer_id;
+
+  insert into users (full_name, email, phone)
+  values ('Arav Sharma', 'arav.demo@sideout.club', '+91 98765 43111')
+  on conflict (email) do update
+    set full_name = excluded.full_name,
+        phone = excluded.phone
+  returning id into arav_user_id;
+
+  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
+  values (arav_user_id, venue_id, 'After work', '4.0', array['prime-time', 'high LTV'])
+  on conflict (user_id, venue_id) do update
+    set favorite_window = excluded.favorite_window,
+        skill_band = excluded.skill_band,
+        tags = excluded.tags
+  returning id into arav_profile_id;
+
+  insert into users (full_name, email, phone)
+  values ('Meera Rawat', 'meera.demo@sideout.club', '+91 98765 43112')
+  on conflict (email) do update
+    set full_name = excluded.full_name,
+        phone = excluded.phone
+  returning id into meera_user_id;
+
+  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
+  values (meera_user_id, venue_id, 'Sunset', '3.0', array['pack holder', 'at-risk'])
+  on conflict (user_id, venue_id) do update
+    set favorite_window = excluded.favorite_window,
+        skill_band = excluded.skill_band,
+        tags = excluded.tags
+  returning id into meera_profile_id;
+
+  insert into users (full_name, email, phone)
+  values ('Kabir Bansal', 'kabir.demo@sideout.club', '+91 98765 43113')
+  on conflict (email) do update
+    set full_name = excluded.full_name,
+        phone = excluded.phone
+  returning id into kabir_user_id;
+
+  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
+  values (kabir_user_id, venue_id, 'Weekend mornings', '4.0+', array['member', 'brings guests'])
+  on conflict (user_id, venue_id) do update
+    set favorite_window = excluded.favorite_window,
+        skill_band = excluded.skill_band,
+        tags = excluded.tags
+  returning id into kabir_profile_id;
+
+  insert into users (full_name, email, phone)
+  values ('Tara Mehta', 'tara.demo@sideout.club', '+91 98765 43114')
+  on conflict (email) do update
+    set full_name = excluded.full_name,
+        phone = excluded.phone
+  returning id into tara_user_id;
+
+  insert into customer_profiles (user_id, venue_id, favorite_window, skill_band, tags)
+  values (tara_user_id, venue_id, 'Flexible', 'Beginner', array['new player', 'promo-converted'])
+  on conflict (user_id, venue_id) do update
+    set favorite_window = excluded.favorite_window,
+        skill_band = excluded.skill_band,
+        tags = excluded.tags
+  returning id into tara_profile_id;
+
+  insert into wallet_ledger_entries (customer_id, amount_inr, kind, note)
+  values
+    (current_profile_id, 1800, 'credit_added', 'Bootstrap owner credit'),
+    (current_profile_id, 400, 'membership_benefit_credit', 'Club Pass launch credit'),
+    (arav_profile_id, 1200, 'credit_added', 'Prime-time loyalty balance'),
+    (meera_profile_id, 600, 'promo_credit', 'Sunset recovery credit'),
+    (kabir_profile_id, 900, 'membership_benefit_credit', 'Member monthly credit'),
+    (tara_profile_id, 300, 'promo_credit', 'New player welcome credit');
+
+  insert into customer_packs (customer_id, product_id, credits_remaining, expires_at)
+  values
+    (current_profile_id, commuter_pack_id, 5, ((base_day + 34) + time '23:00') at time zone 'Asia/Kolkata'),
+    (meera_profile_id, weekday_pack_id, 2, ((base_day + 5) + time '23:00') at time zone 'Asia/Kolkata');
+
+  insert into customer_memberships (customer_id, plan_id, status, renews_at)
+  values
+    (current_profile_id, club_pass_id, 'active', ((base_day + 28) + time '00:00') at time zone 'Asia/Kolkata'),
+    (kabir_profile_id, pro_pass_id, 'active', ((base_day + 21) + time '00:00') at time zone 'Asia/Kolkata');
+
+  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees)
+  values (
+    slot_3_id,
+    current_profile_id,
+    ((base_day - 2) + time '09:30') at time zone 'Asia/Kolkata',
+    'confirmed',
+    'credit_applied',
+    4
+  )
+  returning id into current_booking_id;
+
+  insert into booking_payments (booking_id, amount_inr, mode, status)
+  values (current_booking_id, 900, 'wallet', 'credit_applied');
+
+  insert into wallet_ledger_entries (customer_id, amount_inr, kind, note)
+  values (current_profile_id, -900, 'credit_spent', 'Applied to Prime-Time Court');
+
+  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees)
+  values (
+    slot_4_id,
+    arav_profile_id,
+    ((base_day - 3) + time '11:00') at time zone 'Asia/Kolkata',
+    'confirmed',
+    'paid_online',
+    4
+  )
+  returning id into arav_booking_id;
+
+  insert into booking_payments (booking_id, amount_inr, mode, status)
+  values (arav_booking_id, 950, 'online', 'paid_online');
+
+  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees)
+  values (
+    slot_2_id,
+    meera_profile_id,
+    ((base_day - 3) + time '08:00') at time zone 'Asia/Kolkata',
+    'requested',
+    'pending',
+    2
+  );
+
+  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees)
+  values (
+    slot_5_id,
+    tara_profile_id,
+    ((base_day - 2) + time '13:00') at time zone 'Asia/Kolkata',
+    'requested',
+    'pay_at_venue',
+    2
+  );
+
+  insert into bookings (slot_id, customer_id, booked_at, status, payment_status, attendees)
+  values (
+    slot_6_id,
+    kabir_profile_id,
+    ((base_day - 5) + time '08:00') at time zone 'Asia/Kolkata',
+    'completed',
+    'paid_online',
+    4
+  )
+  returning id into kabir_booking_id;
+
+  insert into booking_payments (booking_id, amount_inr, mode, status)
+  values (kabir_booking_id, 900, 'online', 'paid_online');
+
+  insert into attendance_events (booking_id, customer_id, attended_at)
+  values
+    (kabir_booking_id, kabir_profile_id, ((base_day - 1) + time '19:05') at time zone 'Asia/Kolkata');
+
+  insert into customer_notes (customer_id, authored_by, body)
+  values
+    (meera_profile_id, 'Naina Joshi', 'Went quiet after burning through her weekday pack. Best nudge remains a gentle sunset recovery credit.'),
+    (tara_profile_id, 'Naina Joshi', 'Converted from the beginner promo, but still needs a confidence-building second visit.'),
+    (arav_profile_id, 'Aarav Yadav', 'High-LTV prime-time regular. Worth protecting with member priority if evenings get tighter.');
+
+  insert into offer_redemptions (offer_id, customer_id, redeemed_at, credit_value_inr)
+  values
+    (sunrise_offer_id, meera_profile_id, ((base_day - 1) + time '07:00') at time zone 'Asia/Kolkata', 200),
+    (member_offer_id, kabir_profile_id, ((base_day - 2) + time '19:00') at time zone 'Asia/Kolkata', 250);
+
+  return 'Live Sideout venue initialized. Customer and admin routes are now backed by seeded Supabase data.';
+end;
+$$;
+
 alter table venues enable row level security;
 alter table courts enable row level security;
 alter table users enable row level security;

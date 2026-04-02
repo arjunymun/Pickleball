@@ -7,7 +7,6 @@ import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatVenueDate } from "@/lib/formatters";
-import { membershipPlans, offers, packProducts } from "@/lib/mock-data";
 import { getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
 
 const initialNotice: NoticeState = {
@@ -16,10 +15,13 @@ const initialNotice: NoticeState = {
 };
 
 export function CustomerOffersPage() {
-  const { bookSlot, customerExperience, resetDemoState } = useSideoutDemo();
+  const { bookSlot, catalog, customerExperience, resetDemoState } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
-  const activeOffers = useMemo(() => offers.filter((offer) => offer.status === "active"), []);
+  const activeOffers = useMemo(
+    () => catalog.offers.filter((offer) => offer.status === "active"),
+    [catalog.offers],
+  );
 
   async function runAction(action: () => Promise<string> | string) {
     try {
@@ -37,12 +39,15 @@ export function CustomerOffersPage() {
   }
 
   async function bookFromOffer(offerId: string) {
+    const selectedOffer = catalog.offers.find((offer) => offer.id === offerId);
+    const slotMatcher = `${selectedOffer?.name ?? ""} ${selectedOffer?.slotScope ?? ""}`.toLowerCase();
     const matchedSlot =
       customerExperience.slots.find(
         (entry) =>
           entry.canBook &&
-          ((offerId === "offer-sunrise" && entry.slot.label.toLowerCase().includes("sunrise")) ||
-            (offerId === "offer-member" && entry.slot.label.toLowerCase().includes("prime"))),
+          ((slotMatcher.includes("sunrise") && entry.slot.label.toLowerCase().includes("sunrise")) ||
+            ((slotMatcher.includes("member") || slotMatcher.includes("prime") || slotMatcher.includes("golden")) &&
+              (entry.slot.label.toLowerCase().includes("prime") || entry.slot.label.toLowerCase().includes("golden")))),
       ) ?? customerExperience.slots.find((entry) => entry.canBook);
 
     if (!matchedSlot) {
@@ -147,7 +152,7 @@ export function CustomerOffersPage() {
               description="Each offer tries to move a specific part of the venue calendar, not just raise discount volume."
             />
             <div className="mt-8 grid gap-4">
-              {offers.map((offer) => (
+              {catalog.offers.map((offer) => (
                 <article key={offer.id} className="rounded-[1.5rem] border border-[var(--line-soft)] bg-white/75 p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -189,7 +194,7 @@ export function CustomerOffersPage() {
             <article className="surface-card rounded-[2rem] p-6">
               <p className="section-eyebrow">Membership plans</p>
               <div className="mt-5 grid gap-4">
-                {membershipPlans.map((plan) => (
+                {catalog.membershipPlans.map((plan) => (
                   <div key={plan.id} className="rounded-[1.3rem] bg-white/70 p-4">
                     <div className="flex items-center gap-3">
                       <Sparkles className="h-5 w-5 text-[var(--accent-green)]" />
@@ -205,7 +210,7 @@ export function CustomerOffersPage() {
             <article className="surface-card rounded-[2rem] p-6">
               <p className="section-eyebrow">Pack shelf</p>
               <div className="mt-5 grid gap-4">
-                {packProducts.map((pack) => (
+                {catalog.packProducts.map((pack) => (
                   <div key={pack.id} className="rounded-[1.3rem] bg-white/70 p-4">
                     <div className="flex items-center gap-3">
                       <Ticket className="h-5 w-5 text-[var(--accent)]" />

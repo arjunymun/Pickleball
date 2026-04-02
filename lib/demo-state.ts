@@ -159,6 +159,19 @@ export function getCustomerExperience(state: DemoState, customerId = PREVIEW_CUS
 
 export type CustomerExperienceSnapshot = ReturnType<typeof getCustomerExperience>;
 
+export function getCommercialCatalog() {
+  return {
+    offers: offers.map((offer) => ({ ...offer })),
+    packProducts: packProducts.map((pack) => ({ ...pack })),
+    membershipPlans: membershipPlans.map((plan) => ({
+      ...plan,
+      perks: [...plan.perks],
+    })),
+  };
+}
+
+export type CommercialCatalogSnapshot = ReturnType<typeof getCommercialCatalog>;
+
 export function getAdminDashboard(state: DemoState) {
   const confirmedOrCompleted = state.bookings.filter((booking) =>
     ["confirmed", "completed"].includes(booking.status),

@@ -1,25 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { ArrowRight, Clock3, CreditCard, RotateCcw, ShieldCheck, Sparkles, Ticket } from "lucide-react";
 
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatVenueDate, formatVenueRange } from "@/lib/formatters";
-import { courts, offers } from "@/lib/mock-data";
 import { formatModeLabel, getAvailabilityClasses, getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
-
-const courtLookup = new Map(courts.map((court) => [court.id, court]));
 
 const initialNotice: NoticeState = {
   tone: "info",
-  message: "Shared demo state is live. Book on this screen, switch to /admin, and the operator console updates with the same booking state.",
+  message: "Shared booking, wallet, and offer state is live. On localhost it falls back gracefully to demo mode, and with Supabase configured it can promote into a real venue runtime.",
 };
 
 export function CustomerDashboard() {
-  const { customerExperience, bookSlot, cancelBooking, resetDemoState } = useSideoutDemo();
+  const {
+    adminDashboard,
+    authStatus,
+    bootstrapVenue,
+    bookSlot,
+    cancelBooking,
+    catalog,
+    customerExperience,
+    isSupabaseConfigured,
+    resetDemoState,
+    runtimeSource,
+  } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
+  const courtLookup = useMemo(
+    () => new Map(adminDashboard.courts.map((court) => [court.id, court])),
+    [adminDashboard.courts],
+  );
 
   async function runAction(action: () => Promise<string> | string) {
     try {
@@ -118,9 +131,29 @@ export function CustomerDashboard() {
               <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--ink-soft)]">{notice.message}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-medium text-[var(--accent)]">
-                Localhost synced
-              </span>
+              {runtimeSource === "supabase" ? (
+                <span className="rounded-full bg-[rgba(31,106,84,0.12)] px-4 py-2 text-xs font-medium text-[var(--accent-green)]">
+                  Live Supabase venue
+                </span>
+              ) : isSupabaseConfigured ? (
+                authStatus === "signed_in" ? (
+                  <button
+                    type="button"
+                    className="primary-button px-4 py-2 text-sm"
+                    onClick={() => runAction(bootstrapVenue)}
+                  >
+                    Initialize live venue
+                  </button>
+                ) : (
+                  <Link href="/sign-in" className="secondary-button px-4 py-2 text-sm">
+                    Sign in for live mode
+                  </Link>
+                )
+              ) : (
+                <span className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-medium text-[var(--accent)]">
+                  Localhost demo backend
+                </span>
+              )}
               <button
                 type="button"
                 className="secondary-button px-4 py-2 text-sm"
@@ -337,7 +370,7 @@ export function CustomerDashboard() {
               description="The customer sees reasons to come back. The operator sees which window, segment, and credit shape is actually moving behavior."
             />
             <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {offers.map((offer) => (
+              {catalog.offers.map((offer) => (
                 <article key={offer.id} className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-5">
                   <p className="section-eyebrow">{offer.status}</p>
                   <h3 className="mt-3 text-xl font-semibold tracking-[-0.03em]">{offer.name}</h3>

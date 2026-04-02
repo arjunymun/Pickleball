@@ -48,8 +48,8 @@ export default async function CustomerLayout({
         <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <PreviewNav items={customerNavItems} />
           <p className="max-w-2xl text-sm leading-7 text-[var(--ink-soft)]">
-            Version 1.3 now adds Supabase auth foundations underneath this customer shell while still preserving the
-            live demo path on localhost when credentials are absent.
+            Version 1.5 keeps localhost demo review intact, but it can now promote the customer shell onto a real
+            Supabase venue runtime with live catalog and booking data.
           </p>
         </div>
         {children}

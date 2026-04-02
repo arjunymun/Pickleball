@@ -5,7 +5,7 @@ Sideout is a premium Next.js concept build for a real Dehradun pickleball venue.
 - a customer-facing experience for availability, bookings, wallet value, packs, memberships, and offers
 - an admin-facing operating console for schedule control, retention, promotions, and customer intelligence
 
-The current repo is intentionally frontend-first, but version 1.3 now includes real Supabase auth foundations alongside the typed mock domain layer. That means localhost still works in demo mode without credentials, while the project is ready to switch into a real auth-backed setup as soon as `.env.local` is filled in.
+The current repo stays reviewable on localhost in demo mode, but version 1.5 now includes a real Supabase auth and runtime path. Once `.env.local` is configured, a signed-in user can initialize a live seeded Sideout venue directly from the app and move the customer/admin shells onto Supabase-backed records.
 
 ## Stack
 
@@ -37,8 +37,17 @@ To enable the real backend/auth flow:
 2. Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 3. Add `SUPABASE_SERVICE_ROLE_KEY` if you want admin/server-side mutation paths later
 4. Run the SQL in [supabase/schema.sql](./supabase/schema.sql) against your Supabase project
+5. Start the app, sign in from `/sign-in`, then use the `Initialize live venue` action on `/app` or `/admin`
 
 If the Supabase env vars are missing, Sideout falls back to demo mode automatically and keeps the customer/admin flows reviewable on localhost.
+
+The bootstrap action creates:
+
+- the Sideout venue, courts, slot templates, and bookable slots
+- seeded offers, pack products, and membership plans
+- owner + staff roles
+- a current-user customer profile for the signed-in owner
+- sample customer records, notes, bookings, wallet entries, offer redemptions, packs, and memberships
 
 ## Key routes
 
@@ -57,5 +66,5 @@ If the Supabase env vars are missing, Sideout falls back to demo mode automatica
 
 - Locale assumptions are India-first (`Asia/Kolkata`, INR)
 - Memberships and packs are both represented in the mock model
-- The schema in [supabase/schema.sql](./supabase/schema.sql) now includes an auth bridge from `auth.users`, helper functions, and starter RLS policies
-- Customer/admin product surfaces still use the shared live demo state until the next iteration swaps them onto real Supabase queries and mutations
+- The schema in [supabase/schema.sql](./supabase/schema.sql) includes an auth bridge from `auth.users`, helper functions, live mutation RPCs, and a one-click bootstrap RPC for a seeded venue
+- The authenticated customer/admin surfaces now consume a hybrid runtime snapshot that can come from local demo data or Supabase depending on configuration and sign-in state

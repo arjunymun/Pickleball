@@ -7,7 +7,6 @@ import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatPercent, formatVenueDate, formatVenueRange } from "@/lib/formatters";
-import { offers, PREVIEW_CUSTOMER_ID } from "@/lib/mock-data";
 import { formatModeLabel, getAvailabilityClasses, getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
 
 const initialNotice: NoticeState = {
@@ -16,7 +15,17 @@ const initialNotice: NoticeState = {
 };
 
 export function OperatorDashboard() {
-  const { addWalletCredit, adminDashboard, approveBooking, resetDemoState } = useSideoutDemo();
+  const {
+    addWalletCredit,
+    adminDashboard,
+    authStatus,
+    approveBooking,
+    bootstrapVenue,
+    catalog,
+    isSupabaseConfigured,
+    resetDemoState,
+    runtimeSource,
+  } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   const adminMetrics = [
@@ -42,7 +51,7 @@ export function OperatorDashboard() {
     },
   ];
 
-  const previewCustomer = adminDashboard.customers.find((customer) => customer.id === PREVIEW_CUSTOMER_ID);
+  const previewCustomer = adminDashboard.customers[0] ?? null;
 
   async function runAction(action: () => Promise<string> | string) {
     try {
@@ -140,9 +149,23 @@ export function OperatorDashboard() {
               <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--ink-soft)]">{notice.message}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-medium text-[var(--accent)]">
-                Shared with customer app
-              </span>
+              {runtimeSource === "supabase" ? (
+                <span className="rounded-full bg-[rgba(31,106,84,0.12)] px-4 py-2 text-xs font-medium text-[var(--accent-green)]">
+                  Live Supabase operator mode
+                </span>
+              ) : isSupabaseConfigured && authStatus === "signed_in" ? (
+                <button
+                  type="button"
+                  className="primary-button px-4 py-2 text-sm"
+                  onClick={() => runAction(bootstrapVenue)}
+                >
+                  Initialize live venue
+                </button>
+              ) : (
+                <span className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-medium text-[var(--accent)]">
+                  Shared with customer app
+                </span>
+              )}
               <button
                 type="button"
                 className="secondary-button px-4 py-2 text-sm"
@@ -252,13 +275,17 @@ export function OperatorDashboard() {
                   type="button"
                   className="primary-button px-4 py-2 text-sm"
                   onClick={() =>
-                    runAction(() =>
-                      addWalletCredit(
-                        PREVIEW_CUSTOMER_ID,
+                    runAction(() => {
+                      if (!previewCustomer) {
+                        throw new Error("No live customer is available for the operator credit action yet.");
+                      }
+
+                      return addWalletCredit(
+                        previewCustomer.id,
                         600,
                         "Sunrise recovery credit added from the operator console",
-                      ),
-                    )
+                      );
+                    })
                   }
                 >
                   Add INR 600 to {previewCustomer?.name?.split(" ")[0] ?? "Rhea"}
@@ -365,7 +392,7 @@ export function OperatorDashboard() {
               description="The operator should know which offer is live, who it is aimed at, and why it exists in the schedule, especially when the product is optimizing repeat play instead of one-off discount volume."
             />
             <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {offers.map((offer) => (
+              {catalog.offers.map((offer) => (
                 <article key={offer.id} className="rounded-[1.5rem] border border-[var(--line-soft)] bg-white/70 p-5">
                   <div className="flex items-center gap-3">
                     {offer.status === "active" ? (
