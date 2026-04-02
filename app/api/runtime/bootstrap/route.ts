@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
+import { bootstrapLiveVenueForAuthUser } from "@/lib/supabase/bootstrap-live";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -14,16 +15,33 @@ export async function POST() {
     return NextResponse.json({ error: "Supabase server client unavailable." }, { status: 503 });
   }
 
-  const { data, error } = await supabase.rpc("bootstrap_sideout_demo_for_current_user");
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  if (authError) {
+    return NextResponse.json({ error: authError.message }, { status: 400 });
+  }
+
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
+  let result;
+  try {
+    result = await bootstrapLiveVenueForAuthUser(user);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Live venue bootstrap failed." },
+      { status: 400 },
+    );
   }
 
   const snapshot = await getSupabaseRuntimeSnapshot();
 
   return NextResponse.json({
-    message: typeof data === "string" ? data : "Live Sideout venue initialized.",
+    message: result.message,
     snapshot,
   });
 }

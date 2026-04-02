@@ -261,6 +261,7 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+<<bootstrap>>
 declare
   created_user_id uuid;
   default_venue_id uuid;
@@ -1683,7 +1684,7 @@ begin
       current_booking_id,
       (
         select id from communication_templates
-        where communication_templates.venue_id = venue_id and slug = 'booking-confirmation'
+        where communication_templates.venue_id = bootstrap.venue_id and slug = 'booking-confirmation'
         limit 1
       ),
       'delivered',
@@ -1698,7 +1699,7 @@ begin
       null,
       (
         select id from communication_templates
-        where communication_templates.venue_id = venue_id and slug = 'sunrise-recovery'
+        where communication_templates.venue_id = bootstrap.venue_id and slug = 'sunrise-recovery'
         limit 1
       ),
       'sent',
