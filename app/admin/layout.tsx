@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Compass, Shield } from "lucide-react";
 
+import { AuthStatusPill } from "@/components/auth/auth-status-pill";
 import { PreviewNav } from "@/components/ui/preview-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
@@ -12,7 +13,7 @@ const adminNavItems = [
   { href: "/admin/offers", label: "Offers" },
 ];
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -37,6 +38,7 @@ export default function AdminLayout({
               Customer view
             </Link>
             <ThemeToggle inverted />
+            <AuthStatusPill inverted />
             <span className="inline-flex items-center gap-2 rounded-full bg-white/6 px-4 py-2 text-white">
               <Shield className="h-4 w-4" />
               Owner + staff roles
@@ -46,8 +48,8 @@ export default function AdminLayout({
         <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <PreviewNav items={adminNavItems} inverted />
           <p className="max-w-2xl text-sm leading-7 text-white/65">
-            The operator side now has dedicated schedule, customer, and offer surfaces so Sideout reads like a real
-            control room instead of a single dashboard page.
+            The operator side keeps its multi-route control-room feel, but version 1.3 now makes the shell aware of
+            real auth state and ready for Supabase-backed role routing.
           </p>
         </div>
         {children}

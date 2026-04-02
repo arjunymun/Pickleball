@@ -37,6 +37,7 @@ create table courts (
 
 create table users (
   id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid unique references auth.users(id) on delete cascade,
   full_name text not null,
   email text not null unique,
   phone text
@@ -184,3 +185,210 @@ create table customer_notes (
   created_at timestamptz not null default now(),
   body text not null
 );
+
+create or replace function public.handle_auth_user_created()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.users (auth_user_id, full_name, email, phone)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'full_name', split_part(coalesce(new.email, 'player@sideout.club'), '@', 1)),
+    coalesce(new.email, concat('user-', new.id::text, '@sideout.local')),
+    new.raw_user_meta_data ->> 'phone'
+  )
+  on conflict (email) do update
+    set auth_user_id = excluded.auth_user_id,
+        full_name = excluded.full_name,
+        phone = coalesce(excluded.phone, public.users.phone);
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_auth_user_created();
+
+create or replace function public.is_profile_owner(profile_uuid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from customer_profiles
+    join users on users.id = customer_profiles.user_id
+    where customer_profiles.id = profile_uuid
+      and users.auth_user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.is_admin_for_venue(venue_uuid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from admin_roles
+    join users on users.id = admin_roles.user_id
+    where admin_roles.venue_id = venue_uuid
+      and users.auth_user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.is_admin_for_customer(profile_uuid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from customer_profiles
+    join admin_roles on admin_roles.venue_id = customer_profiles.venue_id
+    join users on users.id = admin_roles.user_id
+    where customer_profiles.id = profile_uuid
+      and users.auth_user_id = auth.uid()
+  );
+$$;
+
+alter table venues enable row level security;
+alter table courts enable row level security;
+alter table users enable row level security;
+alter table customer_profiles enable row level security;
+alter table admin_roles enable row level security;
+alter table slot_templates enable row level security;
+alter table bookable_slots enable row level security;
+alter table bookings enable row level security;
+alter table booking_payments enable row level security;
+alter table pack_products enable row level security;
+alter table membership_plans enable row level security;
+alter table customer_packs enable row level security;
+alter table customer_memberships enable row level security;
+alter table wallet_ledger_entries enable row level security;
+alter table offers enable row level security;
+alter table offer_redemptions enable row level security;
+alter table attendance_events enable row level security;
+alter table customer_notes enable row level security;
+
+create policy "venues are publicly readable" on venues
+  for select using (true);
+
+create policy "courts are publicly readable" on courts
+  for select using (true);
+
+create policy "slot templates are publicly readable" on slot_templates
+  for select using (true);
+
+create policy "bookable slots are publicly readable" on bookable_slots
+  for select using (true);
+
+create policy "pack products are publicly readable" on pack_products
+  for select using (true);
+
+create policy "membership plans are publicly readable" on membership_plans
+  for select using (true);
+
+create policy "offers are publicly readable" on offers
+  for select using (true);
+
+create policy "users can read their own row" on users
+  for select using (auth_user_id = auth.uid());
+
+create policy "customers can read their own profile" on customer_profiles
+  for select using (public.is_profile_owner(id));
+
+create policy "admins can read venue customer profiles" on customer_profiles
+  for select using (public.is_admin_for_venue(venue_id));
+
+create policy "admins can read their own admin roles" on admin_roles
+  for select using (
+    exists (
+      select 1
+      from users
+      where users.id = admin_roles.user_id
+        and users.auth_user_id = auth.uid()
+    )
+  );
+
+create policy "customers can read their own bookings" on bookings
+  for select using (public.is_profile_owner(customer_id));
+
+create policy "admins can read venue bookings" on bookings
+  for select using (public.is_admin_for_customer(customer_id));
+
+create policy "customers can create their own bookings" on bookings
+  for insert with check (public.is_profile_owner(customer_id));
+
+create policy "customers can update their own bookings" on bookings
+  for update using (public.is_profile_owner(customer_id));
+
+create policy "admins can update venue bookings" on bookings
+  for update using (public.is_admin_for_customer(customer_id));
+
+create policy "customers can read their own booking payments" on booking_payments
+  for select using (
+    exists (
+      select 1
+      from bookings
+      where bookings.id = booking_payments.booking_id
+        and public.is_profile_owner(bookings.customer_id)
+    )
+  );
+
+create policy "admins can read venue booking payments" on booking_payments
+  for select using (
+    exists (
+      select 1
+      from bookings
+      where bookings.id = booking_payments.booking_id
+        and public.is_admin_for_customer(bookings.customer_id)
+    )
+  );
+
+create policy "customers can read their own packs" on customer_packs
+  for select using (public.is_profile_owner(customer_id));
+
+create policy "admins can read venue customer packs" on customer_packs
+  for select using (public.is_admin_for_customer(customer_id));
+
+create policy "customers can read their own memberships" on customer_memberships
+  for select using (public.is_profile_owner(customer_id));
+
+create policy "admins can read venue memberships" on customer_memberships
+  for select using (public.is_admin_for_customer(customer_id));
+
+create policy "customers can read their own wallet ledger" on wallet_ledger_entries
+  for select using (public.is_profile_owner(customer_id));
+
+create policy "admins can read venue wallet ledger" on wallet_ledger_entries
+  for select using (public.is_admin_for_customer(customer_id));
+
+create policy "customers can read their own offer redemptions" on offer_redemptions
+  for select using (public.is_profile_owner(customer_id));
+
+create policy "admins can read venue offer redemptions" on offer_redemptions
+  for select using (public.is_admin_for_customer(customer_id));
+
+create policy "customers can read their own attendance events" on attendance_events
+  for select using (public.is_profile_owner(customer_id));
+
+create policy "admins can read venue attendance events" on attendance_events
+  for select using (public.is_admin_for_customer(customer_id));
+
+create policy "customers can read their own customer notes" on customer_notes
+  for select using (public.is_profile_owner(customer_id));
+
+create policy "admins can read venue customer notes" on customer_notes
+  for select using (public.is_admin_for_customer(customer_id));

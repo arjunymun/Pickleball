@@ -61,6 +61,9 @@ export default function HomePage() {
                   {item.label}
                 </Link>
               ))}
+              <Link href="/sign-in" className="transition hover:text-[var(--ink-strong)]">
+                Sign in
+              </Link>
               <ThemeToggle />
               <Link href="/app" className="secondary-button px-4 py-2 text-sm">
                 Customer preview

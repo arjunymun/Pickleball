@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Compass, UserRound } from "lucide-react";
 
+import { AuthStatusPill } from "@/components/auth/auth-status-pill";
 import { PreviewNav } from "@/components/ui/preview-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
@@ -12,7 +13,7 @@ const customerNavItems = [
   { href: "/app/offers", label: "Offers" },
 ];
 
-export default function CustomerLayout({
+export default async function CustomerLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -37,6 +38,7 @@ export default function CustomerLayout({
               Admin view
             </Link>
             <ThemeToggle />
+            <AuthStatusPill />
             <span className="inline-flex items-center gap-2 rounded-full bg-[var(--accent-soft)] px-4 py-2 text-[var(--accent)]">
               <UserRound className="h-4 w-4" />
               Guest browse enabled
@@ -46,8 +48,8 @@ export default function CustomerLayout({
         <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <PreviewNav items={customerNavItems} />
           <p className="max-w-2xl text-sm leading-7 text-[var(--ink-soft)]">
-            Version 1.2 expands the customer preview into a fuller product surface with dedicated bookings, wallet, and
-            offer routes, all backed by the same live demo state.
+            Version 1.3 now adds Supabase auth foundations underneath this customer shell while still preserving the
+            live demo path on localhost when credentials are absent.
           </p>
         </div>
         {children}
