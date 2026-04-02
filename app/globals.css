@@ -185,6 +185,17 @@ a {
   background: rgba(255, 255, 255, 0.92);
 }
 
+[data-theme="dark"] .secondary-button {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--ink-strong);
+}
+
+[data-theme="dark"] .secondary-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 .secondary-button-dark {
   border-color: rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
@@ -317,6 +328,11 @@ a {
 .status-limited {
   color: #a85d17;
   background: rgba(196, 152, 83, 0.16);
+}
+
+.status-booked {
+  color: var(--ink-soft);
+  background: var(--background-strong);
 }
 
 .status-review {

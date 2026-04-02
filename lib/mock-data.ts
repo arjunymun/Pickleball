@@ -20,7 +20,7 @@ import {
 } from "@/lib/domain";
 
 const venueNow = new Date("2026-04-01T18:00:00+05:30");
-const customerPreviewId = "customer-rhea";
+export const PREVIEW_CUSTOMER_ID = "customer-rhea";
 
 export const venue: Venue = {
   id: "venue-sideout",
@@ -399,7 +399,7 @@ export const offers: Offer[] = [
     status: "active",
     startsAt: "2026-03-28T00:00:00+05:30",
     endsAt: "2026-04-10T23:59:00+05:30",
-    headline: "Come back before 8 AM and unlock ₹200 in venue credit.",
+    headline: "Come back before 8 AM and unlock INR 200 in venue credit.",
     audience: "Players inactive for 10+ days",
     redemptionCap: 40,
     slotScope: "Sunrise and weekday early windows",
@@ -493,19 +493,19 @@ function getSlotById(slotId: string) {
 }
 
 export const highlightedSlots = bookableSlots.slice(0, 4);
-export const customerPreviewProfile = customerProfiles.find((profile) => profile.id === customerPreviewId)!;
-export const customerPreviewUser = getUserByCustomerId(customerPreviewId)!;
+export const customerPreviewProfile = customerProfiles.find((profile) => profile.id === PREVIEW_CUSTOMER_ID)!;
+export const customerPreviewUser = getUserByCustomerId(PREVIEW_CUSTOMER_ID)!;
 export const customerPreviewUpcomingBookings = bookings
-  .filter((booking) => booking.customerId === customerPreviewId && ["requested", "confirmed"].includes(booking.status))
+  .filter((booking) => booking.customerId === PREVIEW_CUSTOMER_ID && ["requested", "confirmed"].includes(booking.status))
   .map((booking) => ({ booking, slot: getSlotById(booking.slotId)! }));
 
-export const customerPreviewPack = customerPacks.find((pack) => pack.customerId === customerPreviewId)!;
+export const customerPreviewPack = customerPacks.find((pack) => pack.customerId === PREVIEW_CUSTOMER_ID)!;
 export const customerPreviewMembership = customerMemberships.find(
-  (membership) => membership.customerId === customerPreviewId,
+  (membership) => membership.customerId === PREVIEW_CUSTOMER_ID,
 )!;
 
 export const walletBalance = walletLedgerEntries
-  .filter((entry) => entry.customerId === customerPreviewId)
+  .filter((entry) => entry.customerId === PREVIEW_CUSTOMER_ID)
   .reduce((total, entry) => total + entry.amountInr, 0);
 
 export const adminSummary = {
