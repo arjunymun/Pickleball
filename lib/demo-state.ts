@@ -18,6 +18,7 @@ import {
   customerPacks,
   customerProfiles,
   membershipPlans,
+  offerRedemptions,
   offers,
   packProducts,
   slotTemplates,
@@ -231,6 +232,11 @@ export function getAdminDashboard(state: DemoState) {
     const membershipName = membership
       ? membershipPlans.find((entry) => entry.id === membership.planId)?.name ?? "Membership"
       : "No membership";
+    const nextBooking = getUpcomingBookingsForCustomer(state, profile.id)[0] ?? null;
+    const lastAttendance = attendanceEvents
+      .filter((event) => event.customerId === profile.id)
+      .map((event) => new Date(event.attendedAt).getTime())
+      .sort((first, second) => second - first)[0];
 
     return {
       id: profile.id,
@@ -239,6 +245,15 @@ export function getAdminDashboard(state: DemoState) {
       totalBookings: state.bookings.filter((booking) => booking.customerId === profile.id).length,
       membership: membershipName,
       creditsRemaining: getWalletBalance(state, profile.id),
+      tags: profile.tags,
+      note: state.customerNotes.find((entry) => entry.customerId === profile.id) ?? null,
+      nextBooking,
+      daysSinceLastAttendance: lastAttendance
+        ? Math.floor(
+            (new Date("2026-04-02T08:00:00+05:30").getTime() - lastAttendance) /
+              (24 * 60 * 60 * 1000),
+          )
+        : 99,
     };
   });
 
@@ -252,7 +267,7 @@ export function getAdminDashboard(state: DemoState) {
       repeatPlayRate: (repeatPlayCount / customerProfiles.length) * 100,
       occupancyRate: (confirmedOrCompleted.length / bookableSlots.length) * 100,
       creditsExpiringSoon,
-      offersRedeemed: 2,
+      offersRedeemed: offerRedemptions.length,
     },
     requestQueue,
     upcomingConfirmed,

@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { ArrowUpRight, Compass, UserRound } from "lucide-react";
 
+import { PreviewNav } from "@/components/ui/preview-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
+
+const customerNavItems = [
+  { href: "/app", label: "Overview" },
+  { href: "/app/bookings", label: "Bookings" },
+  { href: "/app/wallet", label: "Wallet" },
+  { href: "/app/offers", label: "Offers" },
+];
 
 export default function CustomerLayout({
   children,
@@ -35,6 +43,13 @@ export default function CustomerLayout({
             </span>
           </nav>
         </header>
+        <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <PreviewNav items={customerNavItems} />
+          <p className="max-w-2xl text-sm leading-7 text-[var(--ink-soft)]">
+            Version 1.2 expands the customer preview into a fuller product surface with dedicated bookings, wallet, and
+            offer routes, all backed by the same live demo state.
+          </p>
+        </div>
         {children}
       </div>
     </main>

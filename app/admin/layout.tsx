@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { ArrowUpRight, Compass, Shield } from "lucide-react";
 
+import { PreviewNav } from "@/components/ui/preview-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
+
+const adminNavItems = [
+  { href: "/admin", label: "Overview" },
+  { href: "/admin/schedule", label: "Schedule" },
+  { href: "/admin/customers", label: "Customers" },
+  { href: "/admin/offers", label: "Offers" },
+];
 
 export default function AdminLayout({
   children,
@@ -35,6 +43,13 @@ export default function AdminLayout({
             </span>
           </nav>
         </header>
+        <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <PreviewNav items={adminNavItems} inverted />
+          <p className="max-w-2xl text-sm leading-7 text-white/65">
+            The operator side now has dedicated schedule, customer, and offer surfaces so Sideout reads like a real
+            control room instead of a single dashboard page.
+          </p>
+        </div>
         {children}
       </div>
     </main>

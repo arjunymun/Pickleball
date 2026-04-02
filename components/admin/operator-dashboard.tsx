@@ -9,49 +9,17 @@ import { getBlockingBookingForSlot } from "@/lib/demo-state";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatPercent, formatVenueDate, formatVenueRange } from "@/lib/formatters";
 import { bookableSlots, courts, customerProfiles, offers, PREVIEW_CUSTOMER_ID, users } from "@/lib/mock-data";
+import { formatModeLabel, getAvailabilityClasses, getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
 
 const courtLookup = new Map(courts.map((court) => [court.id, court]));
 const customerNameLookup = new Map(
   customerProfiles.map((profile) => [profile.id, users.find((user) => user.id === profile.userId)?.name ?? "Sideout player"]),
 );
 
-type NoticeState = {
-  tone: "info" | "success" | "error";
-  message: string;
-};
-
 const initialNotice: NoticeState = {
   tone: "info",
   message: "This operator console shares the same demo state as /app. Booking, approval, and credit actions all persist across both experiences.",
 };
-
-function formatModeLabel(value: string) {
-  return value.replaceAll("_", " ");
-}
-
-function getAvailabilityClasses(value: "open" | "limited" | "booked") {
-  if (value === "open") {
-    return "status-open";
-  }
-
-  if (value === "limited") {
-    return "status-limited";
-  }
-
-  return "status-booked";
-}
-
-function getNoticeClasses(tone: "info" | "success" | "error") {
-  if (tone === "success") {
-    return "border-[rgba(31,106,84,0.18)] bg-[rgba(31,106,84,0.08)] text-[var(--ink-strong)]";
-  }
-
-  if (tone === "error") {
-    return "border-[rgba(221,105,56,0.2)] bg-[rgba(221,105,56,0.08)] text-[var(--ink-strong)]";
-  }
-
-  return "border-[var(--line-soft)] bg-white/65 text-[var(--ink-strong)]";
-}
 
 export function OperatorDashboard() {
   const { addWalletCredit, adminDashboard, approveBooking, resetDemoState, state } = useSideoutDemo();

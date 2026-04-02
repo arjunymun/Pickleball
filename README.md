@@ -31,8 +31,14 @@ Open `http://localhost:3000`.
 ## Key routes
 
 - `/` marketing and product positioning
-- `/app` customer-facing product preview
-- `/admin` operator console preview
+- `/app` customer overview
+- `/app/bookings` live customer booking surface
+- `/app/wallet` wallet, packs, and value surface
+- `/app/offers` offers, packs, and membership positioning
+- `/admin` operator overview
+- `/admin/schedule` daily schedule and approvals
+- `/admin/customers` customer intelligence and recovery actions
+- `/admin/offers` offers, packs, and commercial control surface
 
 ## Notes
 
