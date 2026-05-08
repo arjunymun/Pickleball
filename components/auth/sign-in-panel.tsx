@@ -71,54 +71,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
           : "Preparing the customer account, member profile, and live Supabase session.",
     });
 
-    try {
-      const response = await fetch("/api/portfolio/live-account", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ role }),
-      });
-      const payload = (await response.json()) as {
-        email?: string;
-        password?: string;
-        redirectTo?: string;
-        error?: string;
-      };
-
-      if (!response.ok || !payload.email || !payload.password) {
-        throw new Error(payload.error ?? "Sideout could not prepare the live account.");
-      }
-
-      const supabase = createBrowserSupabaseClient();
-      const { error } = await supabase.auth.signInWithPassword({
-        email: payload.email,
-        password: payload.password,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      setSubmitState({
-        tone: "success",
-        message:
-          role === "operator"
-            ? "Operator session ready. Opening the venue command center."
-            : "Customer session ready. Opening the court booking flow.",
-      });
-
-      router.push(payload.redirectTo ?? (role === "operator" ? "/admin" : "/app/bookings"));
-      router.refresh();
-    } catch (error) {
-      setSubmitState({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Sideout could not create a live sign-in session.",
-      });
-    } finally {
-      setIsSubmitting(false);
-      setActivePortfolioRole(null);
-    }
+    window.location.assign(`/auth/portfolio?role=${role}`);
   }
 
   async function handleOperatorSubmit(event: FormEvent<HTMLFormElement>) {
