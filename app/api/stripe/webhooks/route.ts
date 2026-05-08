@@ -13,6 +13,53 @@ async function handleCheckoutCompleted(event: Stripe.Event) {
     return;
   }
 
+  if (session.metadata.kind === "booking" && session.metadata.bookingId) {
+    const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : null;
+
+    const { error } = await adminSupabase.rpc("confirm_booking_from_stripe", {
+      checkout_session_id: session.id,
+      payment_intent_id: paymentIntentId,
+    });
+
+    if (error) {
+      await adminSupabase
+        .from("bookings")
+        .update({
+          status: "confirmed",
+          payment_status: "paid",
+          confirmed_at: new Date().toISOString(),
+          stripe_checkout_session_id: session.id,
+          stripe_payment_intent_id: paymentIntentId,
+        })
+        .eq("id", session.metadata.bookingId);
+
+      await adminSupabase
+        .from("booking_payments")
+        .update({
+          status: "paid",
+          stripe_payment_intent_id: paymentIntentId,
+        })
+        .eq("stripe_checkout_session_id", session.id);
+    }
+
+    await adminSupabase.from("stripe_checkout_sessions").upsert(
+      {
+        venue_id: session.metadata.venueId ?? null,
+        booking_id: session.metadata.bookingId,
+        hold_id: session.metadata.holdId ?? null,
+        customer_id: session.metadata.customerProfileId,
+        stripe_checkout_session_id: session.id,
+        stripe_payment_intent_id: paymentIntentId,
+        amount_inr: Math.round((session.amount_total ?? 0) / 100),
+        status: "complete",
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: "stripe_checkout_session_id" },
+    );
+
+    return;
+  }
+
   if (session.metadata.kind === "pack" && session.metadata.packProductId) {
     const { data: packProduct } = await adminSupabase
       .from("pack_products")
@@ -132,6 +179,35 @@ async function handleInvoicePaymentFailed(event: Stripe.Event) {
     .eq("stripe_subscription_id", subscriptionId);
 }
 
+async function handleCheckoutExpired(event: Stripe.Event) {
+  const adminSupabase = createSupabaseAdminClient();
+  const session = event.data.object as Stripe.Checkout.Session;
+
+  if (!adminSupabase || session.metadata?.kind !== "booking" || !session.metadata.bookingId) {
+    return;
+  }
+
+  await adminSupabase
+    .from("bookings")
+    .update({
+      status: "payment_failed",
+      payment_status: "failed",
+    })
+    .eq("id", session.metadata.bookingId)
+    .in("status", ["held", "payment_pending"]);
+
+  await adminSupabase
+    .from("booking_holds")
+    .update({ status: "released" })
+    .eq("booking_id", session.metadata.bookingId)
+    .eq("status", "active");
+
+  await adminSupabase
+    .from("booking_payments")
+    .update({ status: "failed" })
+    .eq("stripe_checkout_session_id", session.id);
+}
+
 export async function POST(request: Request) {
   const stripe = getStripeServerClient();
   const webhookSecret = getStripeWebhookSecret();
@@ -158,8 +234,24 @@ export async function POST(request: Request) {
     );
   }
 
+  const adminSupabase = createSupabaseAdminClient();
+  if (adminSupabase) {
+    const { error: idempotencyError } = await adminSupabase.from("stripe_webhook_events").insert({
+      stripe_event_id: event.id,
+      event_type: event.type,
+    });
+
+    if (idempotencyError?.code === "23505") {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+  }
+
   if (event.type === "checkout.session.completed") {
     await handleCheckoutCompleted(event);
+  }
+
+  if (event.type === "checkout.session.expired") {
+    await handleCheckoutExpired(event);
   }
 
   if (

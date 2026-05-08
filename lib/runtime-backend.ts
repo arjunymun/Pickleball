@@ -235,6 +235,11 @@ function mapBookingRow(row: Record<string, unknown>): Booking {
     customerId: String(row.customer_id),
     bookedAt: String(row.booked_at),
     status:
+      row.status === "held" ||
+      row.status === "payment_pending" ||
+      row.status === "payment_failed" ||
+      row.status === "expired" ||
+      row.status === "refunded" ||
       row.status === "requested" ||
       row.status === "confirmed" ||
       row.status === "checked_in" ||
@@ -245,10 +250,25 @@ function mapBookingRow(row: Record<string, unknown>): Booking {
         ? row.status
         : "requested",
     paymentStatus:
-      row.payment_status === "paid_online" || row.payment_status === "pay_at_venue" || row.payment_status === "credit_applied"
+      row.payment_status === "paid" ||
+      row.payment_status === "failed" ||
+      row.payment_status === "refunded" ||
+      row.payment_status === "paid_online" ||
+      row.payment_status === "pay_at_venue" ||
+      row.payment_status === "credit_applied"
         ? row.payment_status
         : "pending",
     attendees: Number(row.attendees),
+    venueId: typeof row.venue_id === "string" ? row.venue_id : null,
+    courtId: typeof row.court_id === "string" ? row.court_id : null,
+    startsAt: typeof row.starts_at === "string" ? row.starts_at : null,
+    endsAt: typeof row.ends_at === "string" ? row.ends_at : null,
+    totalAmountInr: typeof row.total_amount_inr === "number" ? row.total_amount_inr : null,
+    holdExpiresAt: typeof row.hold_expires_at === "string" ? row.hold_expires_at : null,
+    stripeCheckoutSessionId:
+      typeof row.stripe_checkout_session_id === "string" ? row.stripe_checkout_session_id : null,
+    stripePaymentIntentId:
+      typeof row.stripe_payment_intent_id === "string" ? row.stripe_payment_intent_id : null,
     confirmedAt: typeof row.confirmed_at === "string" ? row.confirmed_at : null,
     checkedInAt: typeof row.checked_in_at === "string" ? row.checked_in_at : null,
     completedAt: typeof row.completed_at === "string" ? row.completed_at : null,
@@ -451,7 +471,9 @@ function buildCustomerExperienceFromRemote(params: {
     walletEntries,
   } = params;
 
-  const activeBookings = bookings.filter((booking) => ["requested", "confirmed"].includes(booking.status));
+  const activeBookings = bookings.filter((booking) =>
+    ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
+  );
   const ownActiveBookingsBySlot = new Map(activeBookings.map((booking) => [booking.slotId, booking]));
   const walletBalance = getWalletBalance(walletEntries, customerProfile.id);
 
@@ -623,7 +645,7 @@ function buildAdminDashboardFromRemote(params: {
 
       const hasUpcomingBooking = bookings.some(
         (booking) =>
-          booking.customerId === profile.id && ["requested", "confirmed"].includes(booking.status),
+          booking.customerId === profile.id && ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
       );
 
       const user = userById.get(profile.userId);
@@ -660,7 +682,7 @@ function buildAdminDashboardFromRemote(params: {
         bookings
           .filter(
             (booking) =>
-              booking.customerId === profile.id && ["requested", "confirmed"].includes(booking.status),
+              booking.customerId === profile.id && ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
           )
           .map((booking) => ({
             booking,
@@ -699,7 +721,7 @@ function buildAdminDashboardFromRemote(params: {
     const blockingBooking =
       bookings.find(
         (booking) =>
-          booking.slotId === slot.id && ["requested", "confirmed"].includes(booking.status),
+          booking.slotId === slot.id && ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
       ) ?? null;
 
     const blockingProfile = blockingBooking ? customerProfileById.get(blockingBooking.customerId) : null;

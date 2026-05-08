@@ -1888,3 +1888,401 @@ create policy "admins can read communication templates" on communication_templat
 
 create policy "admins can read communication deliveries" on communication_deliveries
   for select using (public.is_admin_for_venue(venue_id));
+
+-- May 2026 booking engine upgrade. This block is additive so existing Sideout
+-- projects can apply it after the original schema without dropping working data.
+create extension if not exists btree_gist;
+
+do $$
+begin
+  alter type booking_status add value if not exists 'held';
+  alter type booking_status add value if not exists 'payment_pending';
+  alter type booking_status add value if not exists 'payment_failed';
+  alter type booking_status add value if not exists 'expired';
+  alter type booking_status add value if not exists 'refunded';
+  alter type booking_status add value if not exists 'cancelled';
+  alter type booking_payment_status add value if not exists 'paid';
+  alter type booking_payment_status add value if not exists 'failed';
+  alter type booking_payment_status add value if not exists 'refunded';
+end $$;
+
+alter table bookings
+  add column if not exists venue_id uuid references venues(id) on delete cascade,
+  add column if not exists court_id uuid references courts(id) on delete restrict,
+  add column if not exists starts_at timestamptz,
+  add column if not exists ends_at timestamptz,
+  add column if not exists hold_expires_at timestamptz,
+  add column if not exists total_amount_inr integer,
+  add column if not exists stripe_checkout_session_id text,
+  add column if not exists stripe_payment_intent_id text;
+
+update bookings
+set
+  venue_id = coalesce(bookings.venue_id, bookable_slots.venue_id),
+  court_id = coalesce(bookings.court_id, bookable_slots.court_id),
+  starts_at = coalesce(bookings.starts_at, bookable_slots.starts_at),
+  ends_at = coalesce(bookings.ends_at, bookable_slots.ends_at),
+  total_amount_inr = coalesce(bookings.total_amount_inr, bookable_slots.price_inr)
+from bookable_slots
+where bookings.slot_id = bookable_slots.id;
+
+create table if not exists operating_hours (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  day_of_week integer not null check (day_of_week between 0 and 6),
+  opens_at time not null,
+  closes_at time not null,
+  slot_duration_minutes integer not null default 60 check (slot_duration_minutes > 0),
+  is_closed boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (venue_id, day_of_week)
+);
+
+create table if not exists price_rules (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  name text not null,
+  day_of_week integer check (day_of_week between 0 and 6),
+  starts_at time not null,
+  ends_at time not null,
+  price_inr integer not null check (price_inr >= 0),
+  member_price_inr integer check (member_price_inr >= 0),
+  priority integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists admin_blocks (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  court_id uuid not null references courts(id) on delete cascade,
+  starts_at timestamptz not null,
+  ends_at timestamptz not null,
+  reason text not null,
+  created_by uuid references users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  check (starts_at < ends_at)
+);
+
+create table if not exists booking_holds (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  court_id uuid not null references courts(id) on delete cascade,
+  customer_id uuid not null references customer_profiles(id) on delete cascade,
+  booking_id uuid references bookings(id) on delete set null,
+  starts_at timestamptz not null,
+  ends_at timestamptz not null,
+  expires_at timestamptz not null,
+  status text not null default 'active' check (status in ('active', 'converted', 'expired', 'released')),
+  stripe_checkout_session_id text,
+  created_at timestamptz not null default now(),
+  check (starts_at < ends_at)
+);
+
+create table if not exists payments (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  booking_id uuid references bookings(id) on delete set null,
+  customer_id uuid not null references customer_profiles(id) on delete cascade,
+  amount_inr integer not null check (amount_inr >= 0),
+  status text not null default 'pending' check (status in ('pending', 'paid', 'failed', 'refunded')),
+  provider text not null default 'stripe',
+  stripe_checkout_session_id text unique,
+  stripe_payment_intent_id text,
+  created_at timestamptz not null default now(),
+  paid_at timestamptz
+);
+
+create table if not exists stripe_checkout_sessions (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  booking_id uuid references bookings(id) on delete set null,
+  hold_id uuid references booking_holds(id) on delete set null,
+  customer_id uuid not null references customer_profiles(id) on delete cascade,
+  stripe_checkout_session_id text not null unique,
+  stripe_payment_intent_id text,
+  amount_inr integer not null check (amount_inr >= 0),
+  status text not null default 'open' check (status in ('open', 'complete', 'expired', 'failed')),
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+
+create table if not exists stripe_webhook_events (
+  id uuid primary key default gen_random_uuid(),
+  stripe_event_id text not null unique,
+  event_type text not null,
+  processed_at timestamptz not null default now()
+);
+
+create index if not exists bookings_court_time_idx on bookings (court_id, starts_at, ends_at);
+create index if not exists bookings_customer_status_idx on bookings (customer_id, status);
+create index if not exists booking_holds_active_idx on booking_holds (court_id, starts_at, ends_at, expires_at) where status = 'active';
+create index if not exists admin_blocks_court_time_idx on admin_blocks (court_id, starts_at, ends_at);
+create index if not exists payments_booking_idx on payments (booking_id, status);
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'bookings_no_active_overlap'
+  ) then
+    alter table bookings add constraint bookings_no_active_overlap
+      exclude using gist (
+        court_id with =,
+        tstzrange(starts_at, ends_at, '[)') with &&
+      )
+      where (status in ('held', 'payment_pending', 'requested', 'confirmed', 'checked_in'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'booking_holds_no_active_overlap'
+  ) then
+    alter table booking_holds add constraint booking_holds_no_active_overlap
+      exclude using gist (
+        court_id with =,
+        tstzrange(starts_at, ends_at, '[)') with &&
+      )
+      where (status = 'active');
+  end if;
+end $$;
+
+alter table operating_hours enable row level security;
+alter table price_rules enable row level security;
+alter table admin_blocks enable row level security;
+alter table booking_holds enable row level security;
+alter table payments enable row level security;
+alter table stripe_checkout_sessions enable row level security;
+alter table stripe_webhook_events enable row level security;
+
+create policy "operating hours are publicly readable" on operating_hours
+  for select using (true);
+
+create policy "price rules are publicly readable" on price_rules
+  for select using (true);
+
+create policy "admins can manage blocks" on admin_blocks
+  for all using (public.is_admin_for_venue(venue_id))
+  with check (public.is_admin_for_venue(venue_id));
+
+create policy "customers can read their active holds" on booking_holds
+  for select using (public.is_profile_owner(customer_id));
+
+create policy "admins can read venue holds" on booking_holds
+  for select using (public.is_admin_for_venue(venue_id));
+
+create policy "customers can read their payments" on payments
+  for select using (public.is_profile_owner(customer_id));
+
+create policy "admins can read venue payments" on payments
+  for select using (public.is_admin_for_venue(venue_id));
+
+create or replace function public.expire_stale_booking_holds()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  expired_count integer;
+begin
+  update booking_holds
+  set status = 'expired'
+  where status = 'active'
+    and expires_at <= now();
+
+  get diagnostics expired_count = row_count;
+
+  update bookings
+  set
+    status = 'expired',
+    payment_status = case when payment_status = 'pending' then 'failed' else payment_status end
+  where status in ('held', 'payment_pending')
+    and hold_expires_at <= now();
+
+  return concat(expired_count::text, ' stale holds expired.');
+end;
+$$;
+
+create or replace function public.create_booking_hold_for_current_user(slot_uuid uuid, hold_minutes integer default 10)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  slot_row bookable_slots%rowtype;
+  customer_profile_id uuid;
+  new_booking_id uuid;
+  new_hold_id uuid;
+  expires_at_value timestamptz;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  perform public.expire_stale_booking_holds();
+
+  select *
+  into slot_row
+  from bookable_slots
+  where id = slot_uuid
+  for update;
+
+  if slot_row.id is null then
+    raise exception 'Slot not found.';
+  end if;
+
+  customer_profile_id := public.get_current_customer_profile_id(slot_row.venue_id);
+  if customer_profile_id is null then
+    raise exception 'Customer profile not found for the current user.';
+  end if;
+
+  if exists (
+    select 1
+    from admin_blocks
+    where court_id = slot_row.court_id
+      and tstzrange(starts_at, ends_at, '[)') && tstzrange(slot_row.starts_at, slot_row.ends_at, '[)')
+  ) then
+    raise exception 'That court is blocked by the venue.';
+  end if;
+
+  if exists (
+    select 1
+    from bookings
+    where court_id = slot_row.court_id
+      and status in ('held', 'payment_pending', 'requested', 'confirmed', 'checked_in')
+      and tstzrange(starts_at, ends_at, '[)') && tstzrange(slot_row.starts_at, slot_row.ends_at, '[)')
+  ) then
+    raise exception 'That slot is already unavailable.';
+  end if;
+
+  expires_at_value := now() + make_interval(mins => greatest(hold_minutes, 5));
+
+  insert into bookings (
+    slot_id,
+    venue_id,
+    court_id,
+    starts_at,
+    ends_at,
+    customer_id,
+    status,
+    payment_status,
+    attendees,
+    hold_expires_at,
+    total_amount_inr
+  )
+  values (
+    slot_uuid,
+    slot_row.venue_id,
+    slot_row.court_id,
+    slot_row.starts_at,
+    slot_row.ends_at,
+    customer_profile_id,
+    case when slot_row.payment_mode = 'pay_at_venue' then 'requested'::booking_status else 'held'::booking_status end,
+    case when slot_row.payment_mode = 'pay_at_venue' then 'pay_at_venue'::booking_payment_status else 'pending'::booking_payment_status end,
+    greatest(slot_row.capacity, 1),
+    expires_at_value,
+    slot_row.price_inr
+  )
+  returning id into new_booking_id;
+
+  insert into booking_holds (
+    venue_id,
+    court_id,
+    customer_id,
+    booking_id,
+    starts_at,
+    ends_at,
+    expires_at,
+    status
+  )
+  values (
+    slot_row.venue_id,
+    slot_row.court_id,
+    customer_profile_id,
+    new_booking_id,
+    slot_row.starts_at,
+    slot_row.ends_at,
+    expires_at_value,
+    'active'
+  )
+  returning id into new_hold_id;
+
+  update bookable_slots
+  set availability_state = 'limited'
+  where id = slot_uuid;
+
+  perform public.log_operator_activity(
+    slot_row.venue_id,
+    'booking_hold_created',
+    concat(slot_row.label, ' held until ', expires_at_value::text),
+    customer_profile_id,
+    new_booking_id
+  );
+
+  return concat(slot_row.label, ' held for checkout.');
+end;
+$$;
+
+create or replace function public.confirm_booking_from_stripe(checkout_session_id text, payment_intent_id text default null)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  booking_row bookings%rowtype;
+begin
+  select *
+  into booking_row
+  from bookings
+  where stripe_checkout_session_id = checkout_session_id
+  limit 1;
+
+  if booking_row.id is null then
+    select bookings.*
+    into booking_row
+    from bookings
+    join booking_payments on booking_payments.booking_id = bookings.id
+    where booking_payments.stripe_checkout_session_id = checkout_session_id
+    limit 1;
+  end if;
+
+  if booking_row.id is null then
+    return 'No matching booking for Stripe session.';
+  end if;
+
+  update bookings
+  set
+    status = 'confirmed',
+    payment_status = 'paid',
+    confirmed_at = coalesce(confirmed_at, now()),
+    stripe_checkout_session_id = checkout_session_id,
+    stripe_payment_intent_id = payment_intent_id
+  where id = booking_row.id;
+
+  update booking_holds
+  set
+    status = 'converted',
+    stripe_checkout_session_id = checkout_session_id
+  where booking_id = booking_row.id;
+
+  update booking_payments
+  set
+    status = 'paid',
+    stripe_payment_intent_id = payment_intent_id
+  where booking_id = booking_row.id;
+
+  update payments
+  set
+    status = 'paid',
+    stripe_payment_intent_id = payment_intent_id,
+    paid_at = now()
+  where booking_id = booking_row.id;
+
+  update bookable_slots
+  set availability_state = 'booked'
+  where id = booking_row.slot_id;
+
+  return 'Booking confirmed from Stripe webhook.';
+end;
+$$;

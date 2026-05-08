@@ -497,7 +497,7 @@ export const highlightedSlots = bookableSlots.slice(0, 4);
 export const customerPreviewProfile = customerProfiles.find((profile) => profile.id === PREVIEW_CUSTOMER_ID)!;
 export const customerPreviewUser = getUserByCustomerId(PREVIEW_CUSTOMER_ID)!;
 export const customerPreviewUpcomingBookings = bookings
-  .filter((booking) => booking.customerId === PREVIEW_CUSTOMER_ID && ["requested", "confirmed"].includes(booking.status))
+  .filter((booking) => booking.customerId === PREVIEW_CUSTOMER_ID && ["held", "payment_pending", "requested", "confirmed"].includes(booking.status))
   .map((booking) => ({ booking, slot: getSlotById(booking.slotId)! }));
 
 export const customerPreviewPack = customerPacks.find((pack) => pack.customerId === PREVIEW_CUSTOMER_ID)!;
@@ -533,7 +533,7 @@ export const atRiskCustomers = customerProfiles
     const nextBooking = bookings.find(
       (booking) =>
         booking.customerId === profile.id &&
-        ["requested", "confirmed"].includes(booking.status) &&
+        ["held", "payment_pending", "requested", "confirmed"].includes(booking.status) &&
         new Date(getSlotById(booking.slotId)!.startsAt).getTime() > venueNow.getTime(),
     );
 

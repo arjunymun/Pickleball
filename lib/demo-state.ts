@@ -110,7 +110,7 @@ export function getWalletBalance(state: DemoState, customerId: string) {
 export function getBlockingBookingForSlot(state: DemoState, slotId: string) {
   return state.bookings.find(
     (booking) =>
-      booking.slotId === slotId && ["requested", "confirmed"].includes(booking.status),
+      booking.slotId === slotId && ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
   );
 }
 
@@ -118,7 +118,7 @@ export function getUpcomingBookingsForCustomer(state: DemoState, customerId: str
   return state.bookings
     .filter(
       (booking) =>
-        booking.customerId === customerId && ["requested", "confirmed"].includes(booking.status),
+        booking.customerId === customerId && ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
     )
     .map((booking) => ({
       booking,
@@ -371,7 +371,7 @@ export function getAdminDashboard(state: DemoState) {
       const hasUpcomingBooking = state.bookings.some(
         (booking) =>
           booking.customerId === profile.id &&
-          ["requested", "confirmed"].includes(booking.status),
+          ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
       );
 
       return {
@@ -594,7 +594,7 @@ export function cancelBooking(
     throw new Error("Booking not found.");
   }
 
-  if (!["requested", "confirmed"].includes(booking.status)) {
+  if (!["held", "payment_pending", "requested", "confirmed"].includes(booking.status)) {
     throw new Error("Only live bookings can be canceled in the demo.");
   }
 
@@ -643,7 +643,7 @@ export function approveBooking(state: DemoState, bookingId: string): DemoMutatio
     throw new Error("Booking not found.");
   }
 
-  if (booking.status !== "requested") {
+  if (!["held", "payment_pending", "requested"].includes(booking.status)) {
     throw new Error("Only requested bookings can be approved.");
   }
 
