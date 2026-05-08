@@ -7,8 +7,9 @@ Sideout is a premium Next.js concept build for a real Dehradun pickleball venue.
 
 The main product is now live-first. If Supabase is not configured, the customer and operator apps ask for a real live setup instead of silently pretending to be a demo. A separate recruiter walkthrough lives at `/demo` so the portfolio story is still easy to present without confusing it with production behavior.
 
-- phone-first customer auth via Supabase OTP
-- email magic-link operator auth for owner/staff flows
+- one-click live portfolio customer/operator accounts for local and recruiter review
+- phone-first customer auth via Supabase OTP when SMS is configured
+- email magic-link operator auth for owner/staff flows when email delivery is configured
 - live-mode bootstrap and first-run setup state
 - role-gated admin routes
 - operator lifecycle actions for approvals, check-ins, completion, and no-shows
@@ -41,7 +42,7 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`. If that port is occupied, Next.js may run on `http://localhost:3001`; the sign-in redirect uses the browser origin so magic links do not stay pinned to port 3000.
 
 ### Supabase auth setup
 
@@ -51,7 +52,11 @@ To enable the real backend/auth flow:
 2. Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 3. Add `SUPABASE_SERVICE_ROLE_KEY` for live admin/server-side mutation paths and webhook updates
 4. Run the SQL in [supabase/schema.sql](./supabase/schema.sql) against your Supabase project
-5. Start the app, sign in from `/sign-in`, then use the `Initialize live venue` action on `/app`
+5. Start the app, sign in from `/sign-in`, then use either `Live customer account` or `Live operator account`
+
+The live account buttons create or repair confirmed Supabase Auth users with server-side service-role access, then sign the browser into a normal Supabase session. Local development enables this by default. For Vercel previews or production, set `ENABLE_PORTFOLIO_ACCOUNTS=true` only when you intentionally want those portfolio accounts exposed.
+
+The current `.env.local` must point to an active Supabase project. If `/api/portfolio/live-account` returns a message that Supabase is unreachable, replace `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` with the active project values and restart the dev server.
 
 If the Supabase env vars are missing, the public marketing route still renders, but `/app` and `/admin` no longer run demo booking actions. Use `/demo` for the isolated recruiter walkthrough.
 
