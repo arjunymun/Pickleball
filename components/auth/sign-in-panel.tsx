@@ -36,6 +36,16 @@ const initialSubmitState: SubmitState = {
     "Use the live Sideout accounts for a real Supabase session now. SMS and email provider auth remain available when those providers are configured.",
 };
 
+function getPhoneOtpErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : "Sideout could not send the phone OTP.";
+
+  if (message.toLowerCase().includes("unsupported phone")) {
+    return "Phone OTP is not enabled for this Supabase project yet. Use Live customer account for now, or configure Supabase Phone Auth with an SMS provider.";
+  }
+
+  return message;
+}
+
 export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("customer");
@@ -129,6 +139,10 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
 
     try {
       const trimmedPhone = phone.replace(/\s+/g, "");
+      if (!/^\+[1-9]\d{9,14}$/.test(trimmedPhone)) {
+        throw new Error("Enter a full phone number in E.164 format, for example +919876543210.");
+      }
+
       const supabase = createBrowserSupabaseClient();
       const { error } = await supabase.auth.signInWithOtp({
         phone: trimmedPhone,
@@ -151,7 +165,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
     } catch (error) {
       setSubmitState({
         tone: "error",
-        message: error instanceof Error ? error.message : "Sideout could not send the phone OTP.",
+        message: getPhoneOtpErrorMessage(error),
       });
     } finally {
       setIsSubmitting(false);
@@ -279,7 +293,8 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
             <div>
               <p className="text-sm font-semibold text-[var(--ink-strong)]">Provider auth rails</p>
               <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-                Use these when Supabase SMS or email delivery is configured for production.
+                Use these when Supabase SMS or email delivery is configured for production. The live account cards
+                above are the working local entry points.
               </p>
             </div>
             <div className="inline-flex rounded-full border border-[var(--line-soft)] bg-white/80 p-1">
