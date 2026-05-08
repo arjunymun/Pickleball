@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ArrowRight,
   CalendarCheck2,
@@ -16,10 +16,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatVenueDate, formatVenueRange, formatVenueTime } from "@/lib/formatters";
-import { courts } from "@/lib/mock-data";
 import { formatModeLabel, getAvailabilityClasses, getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
-
-const courtLookup = new Map(courts.map((court) => [court.id, court]));
 
 const initialNotice: NoticeState = {
   tone: "info",
@@ -31,12 +28,9 @@ function getDateKey(value: string) {
   return value.slice(0, 10);
 }
 
-function getCourtLabel(courtId: string) {
-  return courtLookup.get(courtId)?.name ?? "Assigned court";
-}
-
 export function CustomerBookingsPage() {
   const {
+    adminDashboard,
     auth,
     bookSlot,
     cancelBooking,
@@ -51,6 +45,13 @@ export function CustomerBookingsPage() {
   const [selectedDate, setSelectedDate] = useState("all");
   const [selectedCourt, setSelectedCourt] = useState("all");
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+
+  const courtLookup = useMemo(
+    () => new Map(adminDashboard.courts.map((court) => [court.id, court])),
+    [adminDashboard.courts],
+  );
+
+  const getCourtLabel = useCallback((courtId: string) => courtLookup.get(courtId)?.name ?? "Court", [courtLookup]);
 
   const openSlots = useMemo(
     () => customerExperience.slots.filter((entry) => entry.canBook),
@@ -72,7 +73,7 @@ export function CustomerBookingsPage() {
       uniqueCourts.set(entry.slot.courtId, getCourtLabel(entry.slot.courtId));
     });
     return Array.from(uniqueCourts, ([value, label]) => ({ value, label }));
-  }, [openSlots]);
+  }, [getCourtLabel, openSlots]);
 
   const filteredOpenSlots = useMemo(
     () =>

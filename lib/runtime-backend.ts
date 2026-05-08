@@ -1113,6 +1113,35 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
     });
   }
 
+  const visibleDashboard: AdminDashboardSnapshot = adminDashboard ?? {
+    ...demoSnapshot.adminDashboard,
+    venue,
+    venueSettings: venueSettings ?? demoSnapshot.adminDashboard.venueSettings,
+    courts,
+    slotTemplates,
+    adminRoles: [],
+    schedule: [],
+    requestQueue: [],
+    upcomingConfirmed: [],
+    atRiskCustomers: [],
+    customers: [],
+    operatorActivity: [],
+    communicationTemplates: [],
+    communicationDeliveries: [],
+    metrics: {
+      repeatPlayRate: 0,
+      occupancyRate: 0,
+      creditsExpiringSoon: 0,
+      offersRedeemed: 0,
+    },
+    customerSegments: {
+      inactivePlayers: 0,
+      expiringPackValue: 0,
+      upcomingRenewals: 0,
+      noShowRisk: 0,
+    },
+  };
+
   return {
     source: "supabase",
     auth: {
@@ -1142,7 +1171,7 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
     }),
     venueSettings,
     customerExperience: customerExperience ?? demoSnapshot.customerExperience,
-    adminDashboard: adminDashboard ?? demoSnapshot.adminDashboard,
+    adminDashboard: visibleDashboard,
     catalog: {
       offers,
       packProducts,
