@@ -15,7 +15,7 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminSchedulePage() {
-  const { adminDashboard, approveBooking, checkInBooking, completeBooking, markBookingNoShow, resetDemoState } =
+  const { adminDashboard, approveBooking, checkInBooking, completeBooking, markBookingNoShow, resetDemoState, runtimeSource } =
     useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
@@ -112,6 +112,15 @@ export function AdminSchedulePage() {
               <p className="section-eyebrow">Live schedule state</p>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--ink-soft)]">{notice.message}</p>
             </div>
+            {runtimeSource === "supabase" ? (
+              <span className="rounded-full bg-[rgba(31,106,84,0.12)] px-4 py-2 text-xs font-medium text-[var(--accent-green)]">
+                Supabase schedule API
+              </span>
+            ) : (
+              <span className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-medium text-[var(--accent)]">
+                Recruiter demo mode
+              </span>
+            )}
             <button
               type="button"
               className="secondary-button px-4 py-2 text-sm"
@@ -169,10 +178,10 @@ export function AdminSchedulePage() {
                   <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm leading-7 text-[var(--ink-soft)]">
                       {entry.blockingBooking
-                        ? `${entry.customerName} currently owns this court in a ${entry.blockingBooking.status} state.`
+                        ? `${entry.customerName} currently owns this court in a ${entry.blockingBooking.status.replaceAll("_", " ")} state with ${entry.blockingBooking.paymentStatus.replaceAll("_", " ")} payment.`
                         : "Open inventory with no active hold yet."}
                     </p>
-                    {entry.blockingBooking?.status === "requested" ? (
+                    {entry.blockingBooking && ["held", "payment_pending", "requested"].includes(entry.blockingBooking.status) ? (
                       <button
                         type="button"
                         className="secondary-button px-4 py-2 text-sm"

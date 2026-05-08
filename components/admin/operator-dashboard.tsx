@@ -163,7 +163,7 @@ export function OperatorDashboard() {
                 </button>
               ) : (
                 <span className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-medium text-[var(--accent)]">
-                  Shared with customer app
+                  Recruiter demo mode
                 </span>
               )}
               <button
@@ -224,10 +224,10 @@ export function OperatorDashboard() {
                   <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm leading-7 text-[var(--ink-soft)]">
                       {entry.blockingBooking
-                        ? `${entry.customerName} currently holds this court in a ${entry.blockingBooking.status} booking state.`
+                        ? `${entry.customerName} currently holds this court in a ${entry.blockingBooking.status.replaceAll("_", " ")} booking state with ${entry.blockingBooking.paymentStatus.replaceAll("_", " ")} payment.`
                         : "Inventory is still open for the customer flow and can convert directly into the next confirmed booking."}
                     </p>
-                    {entry.blockingBooking?.status === "requested" ? (
+                    {entry.blockingBooking && ["held", "payment_pending", "requested"].includes(entry.blockingBooking.status) ? (
                       <button
                         type="button"
                         className="secondary-button px-4 py-2 text-sm"
