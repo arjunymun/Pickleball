@@ -13,6 +13,7 @@ import {
 
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { SideoutCourt3D } from "@/components/ui/sideout-court-3d";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
 import { formatIndianCurrency, formatPercent, formatVenueDate, formatVenueRange } from "@/lib/formatters";
@@ -139,6 +140,8 @@ export default async function HomePage() {
                     </div>
                     <div className="rounded-full border border-white/10 px-3 py-2 text-sm text-white/70">Live preview</div>
                   </div>
+
+                  <SideoutCourt3D />
 
                   <div className="mt-8 grid gap-4">
                     {highlightedSlots.slice(0, 3).map((slot) => (
