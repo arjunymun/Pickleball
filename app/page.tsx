@@ -70,8 +70,8 @@ export default async function HomePage() {
                 Sign in
               </Link>
               <ThemeToggle />
-              <Link href="/app" className="secondary-button px-4 py-2 text-sm">
-                Customer preview
+              <Link href="/demo" className="secondary-button px-4 py-2 text-sm">
+                Recruiter demo
               </Link>
             </nav>
           </header>
@@ -94,8 +94,12 @@ export default async function HomePage() {
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link href="/app" className="primary-button">
-                  Explore the customer app
+                  Open the live app
                   <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link href="/demo" className="secondary-button">
+                  Recruiter demo
+                  <Sparkles className="h-4 w-4" />
                 </Link>
                 <Link href="/admin" className="secondary-button">
                   View the operator OS

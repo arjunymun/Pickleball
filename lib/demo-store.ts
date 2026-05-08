@@ -191,6 +191,73 @@ function createDemoRuntimeSnapshot(state: DemoState, customerId = PREVIEW_CUSTOM
   };
 }
 
+function createLiveRequiredSnapshot(demoSnapshot: RuntimeSnapshot): RuntimeSnapshot {
+  return {
+    ...demoSnapshot,
+    source: "supabase",
+    auth: {
+      status: "signed_out",
+      viewer: {
+        fullName: null,
+        email: null,
+        phone: null,
+        primaryRole: "guest",
+      },
+    },
+    setup: {
+      status: "needs_bootstrap",
+      venueId: null,
+      canBootstrapVenue: false,
+    },
+    customerExperience: {
+      ...demoSnapshot.customerExperience,
+      user: {
+        id: "live-user-required",
+        name: "Live customer",
+        email: "sign-in-required@sideout.local",
+        phone: "",
+      },
+      walletBalance: 0,
+      walletEntries: [],
+      pack: null,
+      packSnapshot: null,
+      membership: null,
+      membershipSnapshot: null,
+      upcomingBookings: [],
+      slots: [],
+    },
+    adminDashboard: {
+      ...demoSnapshot.adminDashboard,
+      schedule: [],
+      requestQueue: [],
+      upcomingConfirmed: [],
+      atRiskCustomers: [],
+      customers: [],
+      operatorActivity: [],
+      communicationDeliveries: [],
+      metrics: {
+        repeatPlayRate: 0,
+        occupancyRate: 0,
+        creditsExpiringSoon: 0,
+        offersRedeemed: 0,
+      },
+      customerSegments: {
+        inactivePlayers: 0,
+        expiringPackValue: 0,
+        upcomingRenewals: 0,
+        noShowRisk: 0,
+      },
+    },
+    capabilities: {
+      customerLive: false,
+      adminLive: false,
+      commerceLive: false,
+      messagingLive: false,
+      pwaReady: true,
+    },
+  };
+}
+
 async function readJsonSafely<T>(response: Response) {
   try {
     return (await response.json()) as T;
@@ -251,6 +318,9 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const demoSnapshot = useMemo(() => createDemoRuntimeSnapshot(state, customerId), [customerId, state]);
   const [runtimeSnapshot, setRuntimeSnapshot] = useState<RuntimeSnapshot | null>(null);
+  const [isDemoRoute] = useState(
+    () => typeof window !== "undefined" && window.location.pathname.startsWith("/demo"),
+  );
   const [authStatus, setAuthStatus] = useState<"loading" | "signed_in" | "signed_out">(
     Boolean(getSupabasePublicEnv()) ? "loading" : "signed_out",
   );
@@ -314,7 +384,12 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
     };
   }, [hasSupabaseEnv]);
 
-  const activeSnapshot = runtimeSnapshot?.source === "supabase" ? runtimeSnapshot : demoSnapshot;
+  const activeSnapshot =
+    runtimeSnapshot?.source === "supabase"
+      ? runtimeSnapshot
+      : isDemoRoute
+        ? demoSnapshot
+        : createLiveRequiredSnapshot(demoSnapshot);
   const customerExperience = activeSnapshot.customerExperience;
   const adminDashboard = activeSnapshot.adminDashboard;
   const catalog = activeSnapshot.catalog;
@@ -332,6 +407,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       return payload.message;
     }
 
+    if (!isDemoRoute) {
+      throw new Error("Demo bookings live on /demo. Sign in and initialize live mode to book from the main product.");
+    }
+
     return runMutation((draft) => applyBookSlot(draft, slotId, customerId));
   }
 
@@ -346,6 +425,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       return payload.message;
     }
 
+    if (!isDemoRoute) {
+      throw new Error("Demo cancellations live on /demo. Sign in to manage real bookings from the main product.");
+    }
+
     return runMutation((draft) => applyCancelBooking(draft, bookingId, actorLabel));
   }
 
@@ -358,6 +441,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       const payload = await postRuntimeMutation(`/api/runtime/admin/bookings/${bookingId}/approve`);
       setRuntimeSnapshot(payload.snapshot);
       return payload.message;
+    }
+
+    if (!isDemoRoute) {
+      throw new Error("Demo approvals live on /demo. Sign in as an operator to manage real bookings.");
     }
 
     return runMutation((draft) => applyApproveBooking(draft, bookingId));
@@ -378,6 +465,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       return payload.message;
     }
 
+    if (!isDemoRoute) {
+      throw new Error("Demo wallet actions live on /demo. Sign in as an operator to manage real credits.");
+    }
+
     return runMutation((draft) => applyWalletCredit(draft, targetCustomerId, amountInr, note));
   }
 
@@ -390,6 +481,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       const payload = await postRuntimeMutation(`/api/runtime/admin/bookings/${bookingId}/check-in`);
       setRuntimeSnapshot(payload.snapshot);
       return payload.message;
+    }
+
+    if (!isDemoRoute) {
+      throw new Error("Demo check-ins live on /demo. Sign in as an operator to manage real bookings.");
     }
 
     return runMutation((draft) => applyCheckInBooking(draft, bookingId));
@@ -406,6 +501,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       return payload.message;
     }
 
+    if (!isDemoRoute) {
+      throw new Error("Demo completion actions live on /demo. Sign in as an operator to manage real bookings.");
+    }
+
     return runMutation((draft) => applyCompleteBooking(draft, bookingId));
   }
 
@@ -418,6 +517,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       const payload = await postRuntimeMutation(`/api/runtime/admin/bookings/${bookingId}/no-show`);
       setRuntimeSnapshot(payload.snapshot);
       return payload.message;
+    }
+
+    if (!isDemoRoute) {
+      throw new Error("Demo no-show actions live on /demo. Sign in as an operator to manage real bookings.");
     }
 
     return runMutation((draft) => applyMarkBookingNoShow(draft, bookingId));
@@ -437,6 +540,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       return payload.message;
     }
 
+    if (!isDemoRoute) {
+      throw new Error("Demo notes live on /demo. Sign in as an operator to manage real customer notes.");
+    }
+
     return runMutation((draft) => applyAddCustomerNote(draft, customerId, body));
   }
 
@@ -449,6 +556,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       const payload = await postRuntimeMutation("/api/runtime/admin/venue-settings", patch);
       setRuntimeSnapshot(payload.snapshot);
       return payload.message;
+    }
+
+    if (!isDemoRoute) {
+      throw new Error("Demo settings live on /demo. Sign in as an operator to manage real venue settings.");
     }
 
     return runMutation((draft) => applyUpdateVenueSettings(draft, patch as Partial<VenueSettings>));
@@ -469,6 +580,10 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       return payload.message;
     }
 
+    if (!isDemoRoute) {
+      throw new Error("Demo messages live on /demo. Sign in as an operator to manage real messaging.");
+    }
+
     return runMutation((draft) => applySendCommunication(draft, customerId, templateId, body));
   }
 
@@ -487,8 +602,8 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
   }
 
   async function reset() {
-    if (activeSnapshot.source === "supabase") {
-      return "Live Supabase mode is active. Demo reset is only available when Sideout is running in demo mode.";
+    if (activeSnapshot.source === "supabase" || !isDemoRoute) {
+      return "Demo reset is only available inside the recruiter demo at /demo.";
     }
 
     return resetDemoState();

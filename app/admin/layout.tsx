@@ -53,6 +53,9 @@ export default async function AdminLayout({
               <ArrowUpRight className="h-4 w-4" />
               Customer view
             </Link>
+            <Link href="/demo" className="inline-flex items-center gap-2 transition hover:text-white">
+              Demo
+            </Link>
             <ThemeToggle inverted />
             <AuthStatusPill inverted />
             <span className="inline-flex items-center gap-2 rounded-full bg-white/6 px-4 py-2 text-white">

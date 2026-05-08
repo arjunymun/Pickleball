@@ -38,20 +38,23 @@ export default async function CustomerLayout({
               <ArrowUpRight className="h-4 w-4" />
               Admin view
             </Link>
+            <Link href="/demo" className="inline-flex items-center gap-2 transition hover:text-[var(--ink-strong)]">
+              Demo
+            </Link>
             <PwaInstallPrompt />
             <ThemeToggle />
             <AuthStatusPill />
             <span className="inline-flex items-center gap-2 rounded-full bg-[var(--accent-soft)] px-4 py-2 text-[var(--accent)]">
               <UserRound className="h-4 w-4" />
-              Guest browse enabled
+              Live mode
             </span>
           </nav>
         </header>
         <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <PreviewNav items={customerNavItems} />
           <p className="max-w-2xl text-sm leading-7 text-[var(--ink-soft)]">
-            The customer shell now spans guest browse, phone-first sign-in, live bookings, Stripe-backed value
-            products, WhatsApp-ready messaging, and an installable PWA posture without losing its localhost demo flow.
+            The customer shell is now live-first: sign in, create holds, confirm with Stripe-backed payment state, and
+            manage real reservations. Demo walkthroughs live separately at `/demo`.
           </p>
         </div>
         {children}
