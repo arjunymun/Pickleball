@@ -3,6 +3,11 @@ export type ConfirmationMode = "instant" | "review";
 export type SlotPaymentMode = "online" | "pay_at_venue" | "hybrid";
 export type AvailabilityState = "open" | "limited" | "booked";
 export type BookingStatus =
+  | "held"
+  | "payment_pending"
+  | "payment_failed"
+  | "expired"
+  | "refunded"
   | "requested"
   | "confirmed"
   | "checked_in"
@@ -12,6 +17,9 @@ export type BookingStatus =
   | "credited";
 export type BookingPaymentStatus =
   | "pending"
+  | "paid"
+  | "failed"
+  | "refunded"
   | "paid_online"
   | "pay_at_venue"
   | "credit_applied";
@@ -112,10 +120,18 @@ export interface Booking {
   id: string;
   slotId: string;
   customerId: string;
+  venueId?: string | null;
+  courtId?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
   bookedAt: string;
   status: BookingStatus;
   paymentStatus: BookingPaymentStatus;
   attendees: number;
+  totalAmountInr?: number | null;
+  holdExpiresAt?: string | null;
+  stripeCheckoutSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
   confirmedAt?: string | null;
   checkedInAt?: string | null;
   completedAt?: string | null;
@@ -132,6 +148,73 @@ export interface BookingPayment {
   status: BookingPaymentStatus;
   stripeCheckoutSessionId?: string | null;
   stripePaymentIntentId?: string | null;
+}
+
+export interface OperatingHour {
+  id: string;
+  venueId: string;
+  dayOfWeek: number;
+  opensAt: string;
+  closesAt: string;
+  slotDurationMinutes: number;
+  isClosed: boolean;
+}
+
+export interface PriceRule {
+  id: string;
+  venueId: string;
+  name: string;
+  dayOfWeek: number | null;
+  startsAt: string;
+  endsAt: string;
+  priceInr: number;
+  memberPriceInr: number | null;
+  priority: number;
+}
+
+export interface BookingHold {
+  id: string;
+  venueId: string;
+  courtId: string;
+  customerId: string;
+  startsAt: string;
+  endsAt: string;
+  expiresAt: string;
+  status: "active" | "converted" | "expired" | "released";
+  bookingId?: string | null;
+  stripeCheckoutSessionId?: string | null;
+  createdAt: string;
+}
+
+export interface AdminBlock {
+  id: string;
+  venueId: string;
+  courtId: string;
+  startsAt: string;
+  endsAt: string;
+  reason: string;
+  createdAt: string;
+}
+
+export interface StripeCheckoutSessionRecord {
+  id: string;
+  venueId: string;
+  bookingId: string | null;
+  holdId: string | null;
+  customerId: string;
+  stripeCheckoutSessionId: string;
+  stripePaymentIntentId?: string | null;
+  amountInr: number;
+  status: "open" | "complete" | "expired" | "failed";
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+export interface StripeWebhookEventRecord {
+  id: string;
+  stripeEventId: string;
+  eventType: string;
+  processedAt: string;
 }
 
 export interface PackProduct {
