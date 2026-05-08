@@ -36,6 +36,27 @@ const initialSubmitState: SubmitState = {
     "Use the live Sideout accounts for a real Supabase session now. SMS and email provider auth remain available when those providers are configured.",
 };
 
+const isPhoneOtpEnabled = process.env.NEXT_PUBLIC_SUPABASE_PHONE_OTP_ENABLED === "true";
+
+function normalizePhoneNumber(value: string) {
+  const compact = value.replace(/[^\d+]/g, "");
+  const digits = compact.replace(/\D/g, "");
+
+  if (compact.startsWith("+")) {
+    return `+${digits}`;
+  }
+
+  if (digits.length === 10) {
+    return `+91${digits}`;
+  }
+
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return `+${digits}`;
+  }
+
+  return compact;
+}
+
 function getPhoneOtpErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "Sideout could not send the phone OTP.";
 
@@ -138,9 +159,15 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
     setIsSubmitting(true);
 
     try {
-      const trimmedPhone = phone.replace(/\s+/g, "");
+      if (!isPhoneOtpEnabled) {
+        throw new Error(
+          "Phone OTP is not enabled yet. Enable Supabase Phone Auth, configure an SMS provider, then set NEXT_PUBLIC_SUPABASE_PHONE_OTP_ENABLED=true.",
+        );
+      }
+
+      const trimmedPhone = normalizePhoneNumber(phone);
       if (!/^\+[1-9]\d{9,14}$/.test(trimmedPhone)) {
-        throw new Error("Enter a full phone number in E.164 format, for example +919876543210.");
+        throw new Error("Enter a full Indian mobile number, for example +91 81260 60338.");
       }
 
       const supabase = createBrowserSupabaseClient();
@@ -293,8 +320,8 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
             <div>
               <p className="text-sm font-semibold text-[var(--ink-strong)]">Provider auth rails</p>
               <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-                Use these when Supabase SMS or email delivery is configured for production. The live account cards
-                above are the working local entry points.
+                Use these when Supabase SMS or email delivery is configured for production. Indian numbers are
+                normalized to E.164, for example +91 8126060338 becomes +918126060338.
               </p>
             </div>
             <div className="inline-flex rounded-full border border-[var(--line-soft)] bg-white/80 p-1">
@@ -329,13 +356,27 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
                   required
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
-                  placeholder="+91 98765 43210"
+                  placeholder="+91 81260 60338"
                   className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
                 />
+                <span className="text-xs leading-5 text-[var(--ink-soft)]">
+                  {isPhoneOtpEnabled
+                    ? `Will send to ${normalizePhoneNumber(phone)}`
+                    : "SMS delivery is off until Supabase Phone Auth and an SMS provider are enabled."}
+                </span>
               </label>
-              <button type="submit" className="primary-button w-fit px-5 py-3 text-sm" disabled={isSubmitting}>
+              <button
+                type="submit"
+                className="primary-button w-fit px-5 py-3 text-sm"
+                disabled={isSubmitting || !isPhoneOtpEnabled}
+                title={
+                  isPhoneOtpEnabled
+                    ? "Send phone OTP"
+                    : "Enable Supabase Phone Auth and an SMS provider before sending OTPs"
+                }
+              >
                 <Smartphone className="h-4 w-4" />
-                {isSubmitting ? "Sending OTP..." : "Send OTP"}
+                {isSubmitting ? "Sending OTP..." : isPhoneOtpEnabled ? "Send OTP" : "SMS provider required"}
               </button>
             </form>
 
