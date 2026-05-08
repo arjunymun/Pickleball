@@ -18,7 +18,7 @@ const initialNotice: NoticeState = {
 };
 
 export function CustomerBookingsPage() {
-  const { bookSlot, cancelBooking, customerExperience, resetDemoState } = useSideoutDemo();
+  const { bookSlot, cancelBooking, customerExperience, resetDemoState, runtimeSource, startBookingCheckout } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   const openSlots = useMemo(
@@ -159,6 +159,15 @@ export function CustomerBookingsPage() {
                         >
                           Cancel
                         </button>
+                        {runtimeSource === "supabase" && ["held", "payment_pending"].includes(booking.status) ? (
+                          <button
+                            type="button"
+                            className="primary-button px-4 py-2 text-sm"
+                            onClick={() => runAction(() => startBookingCheckout(booking.id))}
+                          >
+                            Checkout
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   </article>
@@ -221,7 +230,7 @@ export function CustomerBookingsPage() {
                       <p className="text-sm leading-7 text-[var(--ink-soft)]">
                         {entry.slot.confirmationMode === "review"
                           ? "This request lands in the operator queue for manual confirmation."
-                          : "This slot confirms immediately and preserves its settlement mode for the venue."}
+                          : "This creates a temporary hold first. Stripe webhook confirmation is what turns it into a paid booking."}
                       </p>
                       <button
                         type="button"

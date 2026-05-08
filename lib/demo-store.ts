@@ -400,7 +400,7 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
         throw new Error("This signed-in account does not have a live customer profile ready yet.");
       }
 
-      const payload = await postRuntimeMutation("/api/runtime/bookings", {
+      const payload = await postRuntimeMutation("/api/bookings/holds", {
         slotId,
       });
       setRuntimeSnapshot(payload.snapshot);
@@ -412,6 +412,32 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
     }
 
     return runMutation((draft) => applyBookSlot(draft, slotId, customerId));
+  }
+
+  async function startBookingCheckout(bookingId: string) {
+    if (activeSnapshot.source === "supabase") {
+      if (!activeSnapshot.capabilities.customerLive) {
+        throw new Error("This signed-in account does not have a live customer profile ready yet.");
+      }
+
+      const response = await fetch(`/api/bookings/${bookingId}/checkout`, {
+        method: "POST",
+      });
+
+      const payload = await readJsonSafely<{ error?: string; url?: string }>(response);
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error ?? "Sideout could not start booking checkout.");
+      }
+
+      window.location.assign(payload.url);
+      return "Redirecting to Stripe Checkout.";
+    }
+
+    if (!isDemoRoute) {
+      throw new Error("Checkout is live-only. Use /demo for the narrated booking walkthrough.");
+    }
+
+    return "In the live app this opens Stripe Checkout. In the recruiter demo, the booking state is kept local so the flow is easy to explain.";
   }
 
   async function cancelBooking(bookingId: string, actorLabel = "Customer") {
@@ -622,6 +648,7 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
     catalog,
     capabilities: activeSnapshot.capabilities,
     bookSlot,
+    startBookingCheckout,
     cancelBooking,
     approveBooking,
     addWalletCredit,

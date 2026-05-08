@@ -27,6 +27,7 @@ export function CustomerDashboard() {
     isSupabaseConfigured,
     resetDemoState,
     runtimeSource,
+    startBookingCheckout,
   } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
   const courtLookup = useMemo(
@@ -346,6 +347,15 @@ export function CustomerDashboard() {
                         >
                           Cancel
                         </button>
+                        {runtimeSource === "supabase" && ["held", "payment_pending"].includes(booking.status) ? (
+                          <button
+                            type="button"
+                            className="primary-button px-4 py-2 text-sm"
+                            onClick={() => runAction(() => startBookingCheckout(booking.id))}
+                          >
+                            Checkout
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   </article>
