@@ -117,7 +117,7 @@ export function AdminOffersPage() {
             ) : (
               <article className="mt-5 rounded-[1.5rem] border border-[var(--line-soft)] bg-white/70 p-5">
                 <p className="text-sm leading-7 text-[var(--ink-soft)]">
-                  No at-risk player is seeded right now. Reset the demo or move bookings around to repopulate the recovery list.
+                  No at-risk player is active right now. Reset the demo or move bookings around to repopulate the recovery list.
                 </p>
               </article>
             )}

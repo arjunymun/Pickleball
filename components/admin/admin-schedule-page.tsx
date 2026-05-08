@@ -129,7 +129,7 @@ export function AdminSchedulePage() {
           <div className="surface-card-strong rounded-[2rem] p-6">
             <SectionHeading
               eyebrow="Schedule board"
-              title="Every seeded court slot in one working surface."
+              title="Every May court window in one working surface."
               description="Operators can scan availability, read booking state, and approve pending holds without jumping back to a single summary page."
             />
             <div className="mt-8 grid gap-4">

@@ -34,8 +34,9 @@ import { getTwilioWhatsappEnv } from "@/lib/communications/whatsapp";
 import { isStripeConfigured } from "@/lib/stripe/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getMayRelativeIso } from "@/lib/booking/may";
 
-const RUNTIME_NOW = "2026-04-02T08:00:00+05:30";
+const RUNTIME_NOW = getMayRelativeIso(0, "09:00");
 
 const DEMO_VENUE_SETTINGS: VenueSettings = {
   id: "demo-venue-settings",

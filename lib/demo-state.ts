@@ -30,6 +30,7 @@ import {
   venue,
   walletLedgerEntries,
 } from "@/lib/mock-data";
+import { getMayRelativeIso } from "@/lib/booking/may";
 
 export const DEMO_STATE_VERSION = 1;
 
@@ -219,7 +220,7 @@ const demoOperatorActivity: OperatorActivityLog[] = [
     bookingId: bookings[0]?.id ?? null,
     action: "credit_added",
     detail: "Recovery credit added for a lapsed sunrise regular.",
-    createdAt: "2026-04-01T18:20:00+05:30",
+    createdAt: getMayRelativeIso(-1, "18:20"),
   },
   {
     id: "activity-002",
@@ -229,7 +230,7 @@ const demoOperatorActivity: OperatorActivityLog[] = [
     bookingId: bookings[0]?.id ?? null,
     action: "booking_approved",
     detail: "Coach hold approved from the operator queue.",
-    createdAt: "2026-04-01T16:05:00+05:30",
+    createdAt: getMayRelativeIso(-1, "16:05"),
   },
   {
     id: "activity-003",
@@ -239,7 +240,7 @@ const demoOperatorActivity: OperatorActivityLog[] = [
     bookingId: null,
     action: "whatsapp_sent",
     detail: "Sunrise recovery nudge delivered through WhatsApp.",
-    createdAt: "2026-03-31T19:45:00+05:30",
+    createdAt: getMayRelativeIso(-2, "19:45"),
   },
 ];
 
@@ -291,7 +292,7 @@ const demoCommunicationDeliveries: CommunicationDelivery[] = [
     provider: "twilio_whatsapp",
     providerMessageId: "demo-msg-001",
     body: "You are confirmed for Sunrise Rally tomorrow.",
-    sentAt: "2026-04-01T18:25:00+05:30",
+    sentAt: getMayRelativeIso(-1, "18:25"),
   },
   {
     id: "delivery-002",
@@ -305,7 +306,7 @@ const demoCommunicationDeliveries: CommunicationDelivery[] = [
     provider: "twilio_whatsapp",
     providerMessageId: "demo-msg-002",
     body: "We dropped a sunrise recovery credit into your wallet.",
-    sentAt: "2026-04-01T09:10:00+05:30",
+    sentAt: getMayRelativeIso(-1, "09:10"),
   },
 ];
 
@@ -320,7 +321,7 @@ export function getAdminDashboard(state: DemoState) {
 
   const creditsExpiringSoon = customerPacks.filter((pack) => {
     const expiresAt = new Date(pack.expiresAt).getTime();
-    const now = new Date("2026-04-02T08:00:00+05:30").getTime();
+    const now = new Date(getMayRelativeIso(0, "09:00")).getTime();
     return expiresAt - now < 7 * 24 * 60 * 60 * 1000;
   }).length;
 
@@ -378,7 +379,7 @@ export function getAdminDashboard(state: DemoState) {
         user: getUserByCustomerId(profile.id)!,
         daysSinceLastAttendance: lastAttendance
           ? Math.floor(
-              (new Date("2026-04-02T08:00:00+05:30").getTime() - lastAttendance) /
+              (new Date(getMayRelativeIso(0, "09:00")).getTime() - lastAttendance) /
                 (24 * 60 * 60 * 1000),
             )
           : 99,
@@ -415,7 +416,7 @@ export function getAdminDashboard(state: DemoState) {
       nextBooking,
       daysSinceLastAttendance: lastAttendance
         ? Math.floor(
-            (new Date("2026-04-02T08:00:00+05:30").getTime() - lastAttendance) /
+            (new Date(getMayRelativeIso(0, "09:00")).getTime() - lastAttendance) /
               (24 * 60 * 60 * 1000),
           )
         : 99,

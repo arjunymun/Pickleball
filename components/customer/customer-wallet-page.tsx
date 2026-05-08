@@ -235,7 +235,7 @@ export function CustomerWalletPage() {
             ) : (
               <div className="mt-8 rounded-[1.7rem] border border-[var(--line-soft)] bg-white/75 p-6">
                 <p className="text-sm leading-7 text-[var(--ink-soft)]">
-                  All seeded slots are currently held. Reset the demo or free one from the bookings route to re-open a
+                  All May slots are currently held. Reset the demo or free one from the bookings route to re-open a
                   spend opportunity.
                 </p>
               </div>

@@ -14,7 +14,7 @@ const courtLookup = new Map(courts.map((court) => [court.id, court]));
 
 const initialNotice: NoticeState = {
   tone: "info",
-  message: "Version 1.2 turns bookings into their own product surface. All actions still sync back to the overview and operator routes.",
+  message: "May booking mode is active. Holds, checkout state, cancellations, and operator actions all sync back through the same booking engine.",
 };
 
 export function CustomerBookingsPage() {
