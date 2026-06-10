@@ -152,7 +152,7 @@ export function CustomerDashboard() {
                 )
               ) : (
                 <span className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-medium text-[var(--accent)]">
-                  Localhost demo backend
+                  Demo backend
                 </span>
               )}
               <button

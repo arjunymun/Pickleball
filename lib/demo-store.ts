@@ -384,12 +384,18 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
     };
   }, [hasSupabaseEnv]);
 
+  // When Supabase is configured but no live snapshot has loaded (signed-out or not yet
+  // bootstrapped), show the genuine live-required state. When Supabase is NOT configured at
+  // all (e.g. the public Vercel deploy), fall back to the functional local demo runtime so
+  // visitors can actually browse availability and book instead of hitting a dead empty feed.
   const activeSnapshot =
     runtimeSnapshot?.source === "supabase"
       ? runtimeSnapshot
       : isDemoRoute
         ? demoSnapshot
-        : createLiveRequiredSnapshot(demoSnapshot);
+        : hasSupabaseEnv
+          ? createLiveRequiredSnapshot(demoSnapshot)
+          : demoSnapshot;
   const customerExperience = activeSnapshot.customerExperience;
   const adminDashboard = activeSnapshot.adminDashboard;
   const catalog = activeSnapshot.catalog;
@@ -407,7 +413,7 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       return payload.message;
     }
 
-    if (!isDemoRoute) {
+    if (!isDemoRoute && hasSupabaseEnv) {
       throw new Error("Demo bookings live on /demo. Sign in and initialize live mode to book from the main product.");
     }
 
@@ -433,7 +439,7 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       return "Redirecting to Stripe Checkout.";
     }
 
-    if (!isDemoRoute) {
+    if (!isDemoRoute && hasSupabaseEnv) {
       throw new Error("Checkout is live-only. Use /demo for the narrated booking walkthrough.");
     }
 
@@ -451,7 +457,7 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       return payload.message;
     }
 
-    if (!isDemoRoute) {
+    if (!isDemoRoute && hasSupabaseEnv) {
       throw new Error("Demo cancellations live on /demo. Sign in to manage real bookings from the main product.");
     }
 
