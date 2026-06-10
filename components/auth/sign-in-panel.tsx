@@ -282,7 +282,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
           </button>
           <button
             type="button"
-            className="group rounded-[1.5rem] border border-[rgba(11,31,39,0.14)] bg-white/75 p-5 text-left shadow-[0_18px_45px_rgba(11,31,39,0.08)] transition hover:-translate-y-0.5 hover:border-[rgba(11,31,39,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
+            className="group rounded-[1.5rem] border border-[rgba(11,31,39,0.14)] bg-white/75 dark:bg-white/[0.06] dark:border-white/12 p-5 text-left shadow-[0_18px_45px_rgba(11,31,39,0.08)] transition hover:-translate-y-0.5 hover:border-[rgba(11,31,39,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
             disabled={isSubmitting}
             onClick={() => void enterPortfolioAccount("operator")}
           >
@@ -309,13 +309,13 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
               ? "border-[rgba(31,106,84,0.18)] bg-[rgba(31,106,84,0.08)] text-[var(--ink-strong)]"
               : submitState.tone === "error"
                 ? "border-[rgba(221,105,56,0.2)] bg-[rgba(221,105,56,0.08)] text-[var(--ink-strong)]"
-                : "border-[var(--line-soft)] bg-white/65 text-[var(--ink-soft)]"
+                : "border-[var(--line-soft)] bg-white/65 dark:bg-white/[0.05] text-[var(--ink-soft)]"
           }`}
         >
           {submitState.message}
         </div>
 
-        <div className="mt-8 rounded-[1.5rem] border border-[var(--line-soft)] bg-white/55 p-4 sm:p-5">
+        <div className="mt-8 rounded-[1.5rem] border border-[var(--line-soft)] bg-white/55 dark:bg-white/[0.04] p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-[var(--ink-strong)]">Provider auth rails</p>
@@ -357,7 +357,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                   placeholder="+91 81260 60338"
-                  className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
+                  className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
                 />
                 <span className="text-xs leading-5 text-[var(--ink-soft)]">
                   {isPhoneOtpEnabled
@@ -381,7 +381,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
             </form>
 
             {otpSent ? (
-              <form className="grid gap-4 rounded-[1.5rem] border border-[var(--line-soft)] bg-white/55 p-4" onSubmit={handleOtpVerify}>
+              <form className="grid gap-4 rounded-[1.5rem] border border-[var(--line-soft)] bg-white/55 dark:bg-white/[0.04] p-4" onSubmit={handleOtpVerify}>
                 <label className="grid gap-2">
                   <span className="text-sm font-medium text-[var(--ink-strong)]">Verification code</span>
                   <input
@@ -391,7 +391,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
                     value={otp}
                     onChange={(event) => setOtp(event.target.value)}
                     placeholder="123456"
-                    className="rounded-[1.1rem] border border-[var(--line-soft)] bg-white/70 px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
+                    className="rounded-[1.1rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
                   />
                 </label>
                 <button type="submit" className="primary-button w-fit px-5 py-3 text-sm" disabled={isSubmitting}>
@@ -411,7 +411,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="owner@sideout.club"
-                className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
+                className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
               />
             </label>
             <button type="submit" className="primary-button w-fit px-5 py-3 text-sm" disabled={isSubmitting}>

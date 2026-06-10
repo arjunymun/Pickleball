@@ -222,7 +222,7 @@ export default async function HomePage() {
                 {highlightedSlots.map((slot) => (
                   <article
                     key={slot.id}
-                    className="rounded-[1.6rem] border border-[var(--line-soft)] bg-white/70 p-5"
+                    className="rounded-[1.6rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-5"
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -271,19 +271,19 @@ export default async function HomePage() {
               <div className="surface-card rounded-[2rem] p-6">
                 <p className="section-eyebrow">What the venue is selling</p>
                 <ul className="mt-5 grid gap-4">
-                  <li className="rounded-[1.3rem] bg-white/65 p-4">
+                  <li className="rounded-[1.3rem] bg-white/65 dark:bg-white/[0.05] p-4">
                     <div className="flex items-center gap-3">
                       <Users2 className="h-5 w-5 text-[var(--accent-green)]" />
                       <p className="font-medium">Court slots with mixed confirmation rules</p>
                     </div>
                   </li>
-                  <li className="rounded-[1.3rem] bg-white/65 p-4">
+                  <li className="rounded-[1.3rem] bg-white/65 dark:bg-white/[0.05] p-4">
                     <div className="flex items-center gap-3">
                       <Sparkles className="h-5 w-5 text-[var(--accent)]" />
                       <p className="font-medium">Offers that target repeat play, not blanket discounting</p>
                     </div>
                   </li>
-                  <li className="rounded-[1.3rem] bg-white/65 p-4">
+                  <li className="rounded-[1.3rem] bg-white/65 dark:bg-white/[0.05] p-4">
                     <div className="flex items-center gap-3">
                       <ShieldCheck className="h-5 w-5 text-[var(--accent-gold)]" />
                       <p className="font-medium">Credits and pack restoration instead of default cash refunds</p>
@@ -325,7 +325,7 @@ export default async function HomePage() {
                 </p>
                 <ul className="mt-5 grid gap-3">
                   {plan.perks.map((perk) => (
-                    <li key={perk} className="rounded-[1.2rem] bg-white/70 px-4 py-3 text-sm leading-6 text-[var(--ink-soft)]">
+                    <li key={perk} className="rounded-[1.2rem] bg-white/70 dark:bg-white/[0.06] px-4 py-3 text-sm leading-6 text-[var(--ink-soft)]">
                       {perk}
                     </li>
                   ))}
@@ -414,7 +414,7 @@ export default async function HomePage() {
               </div>
               <div className="mt-6 grid gap-4">
                 {atRiskCustomers.map((entry) => (
-                  <article key={entry.profile.id} className="rounded-[1.5rem] border border-[var(--line-soft)] bg-white/70 p-5">
+                  <article key={entry.profile.id} className="rounded-[1.5rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-xl font-semibold tracking-[-0.03em]">{entry.user.name}</p>

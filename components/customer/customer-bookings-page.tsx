@@ -131,19 +131,19 @@ export function CustomerBookingsPage() {
               booking APIs; conflict checks and payment state live on the server.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-4">
+              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
                 <p className="section-eyebrow">Upcoming</p>
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
                   {customerExperience.upcomingBookings.length}
                 </p>
                 <p className="mt-2 text-sm text-[var(--ink-soft)]">Bookings tied to this account</p>
               </article>
-              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-4">
+              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
                 <p className="section-eyebrow">Available</p>
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{openSlots.length}</p>
                 <p className="mt-2 text-sm text-[var(--ink-soft)]">Slots open after holds and blocks</p>
               </article>
-              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-4">
+              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
                 <p className="section-eyebrow">Wallet</p>
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
                   {formatIndianCurrency(customerExperience.walletBalance)}
@@ -235,7 +235,7 @@ export function CustomerBookingsPage() {
                     className={`rounded-full border px-4 py-2 text-sm transition ${
                       selectedDate === "all"
                         ? "border-[var(--ink-strong)] bg-[var(--ink-strong)] text-white"
-                        : "border-[var(--line-soft)] bg-white/70 text-[var(--ink-soft)]"
+                        : "border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] text-[var(--ink-soft)]"
                     }`}
                     onClick={() => setSelectedDate("all")}
                   >
@@ -248,7 +248,7 @@ export function CustomerBookingsPage() {
                       className={`rounded-full border px-4 py-2 text-sm transition ${
                         selectedDate === option.value
                           ? "border-[var(--ink-strong)] bg-[var(--ink-strong)] text-white"
-                          : "border-[var(--line-soft)] bg-white/70 text-[var(--ink-soft)]"
+                          : "border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] text-[var(--ink-soft)]"
                       }`}
                       onClick={() => setSelectedDate(option.value)}
                     >
@@ -269,7 +269,7 @@ export function CustomerBookingsPage() {
                     className={`rounded-full border px-4 py-2 text-sm transition ${
                       selectedCourt === "all"
                         ? "border-[var(--ink-strong)] bg-[var(--ink-strong)] text-white"
-                        : "border-[var(--line-soft)] bg-white/70 text-[var(--ink-soft)]"
+                        : "border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] text-[var(--ink-soft)]"
                     }`}
                     onClick={() => setSelectedCourt("all")}
                   >
@@ -282,7 +282,7 @@ export function CustomerBookingsPage() {
                       className={`rounded-full border px-4 py-2 text-sm transition ${
                         selectedCourt === option.value
                           ? "border-[var(--ink-strong)] bg-[var(--ink-strong)] text-white"
-                          : "border-[var(--line-soft)] bg-white/70 text-[var(--ink-soft)]"
+                          : "border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] text-[var(--ink-soft)]"
                       }`}
                       onClick={() => setSelectedCourt(option.value)}
                     >
@@ -292,7 +292,7 @@ export function CustomerBookingsPage() {
                 </div>
               </div>
 
-              <div className="rounded-[1.5rem] border border-[var(--line-soft)] bg-white/70 p-5">
+              <div className="rounded-[1.5rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-5">
                 <p className="section-eyebrow">Selected slot</p>
                 {focusedSlot ? (
                   <div className="mt-4 grid gap-4">
@@ -492,7 +492,7 @@ export function CustomerBookingsPage() {
                 ["2", "Checkout", "Stripe opens only for a booking that belongs to you."],
                 ["3", "Confirm", "Webhook success marks the booking paid and confirmed."],
               ].map(([step, title, body]) => (
-                <article key={step} className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 p-4">
+                <article key={step} className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
                   <p className="grid h-9 w-9 place-items-center rounded-full bg-[var(--ink-strong)] text-sm font-semibold text-white">
                     {step}
                   </p>

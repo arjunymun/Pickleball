@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
+/* Enable dark: Tailwind utilities to match data-theme="dark" instead of prefers-color-scheme */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --background: #f5ecde;
   --background-strong: #eadbc7;
+  --accent-deep: #145238;
+  --eyebrow-ink: rgba(21, 32, 27, 0.52);
   --panel: rgba(251, 246, 240, 0.78);
   --panel-strong: rgba(255, 250, 245, 0.92);
   --panel-dark: rgba(18, 23, 18, 0.9);
@@ -59,6 +64,8 @@
   --theme-toggle-border: rgba(255, 255, 255, 0.12);
   --theme-toggle-hover: rgba(255, 255, 255, 0.08);
   --theme-toggle-icon-bg: rgba(255, 255, 255, 0.08);
+  --accent-deep: #5db896;
+  --eyebrow-ink: rgba(238, 241, 231, 0.48);
   color-scheme: dark;
 }
 
@@ -110,7 +117,7 @@ a {
   font-weight: 600;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: rgba(21, 32, 27, 0.52);
+  color: var(--eyebrow-ink);
 }
 
 .surface-card {
@@ -162,6 +169,11 @@ a {
   box-shadow: 0 24px 44px rgba(221, 105, 56, 0.28);
 }
 
+.primary-button:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 3px;
+}
+
 .secondary-button {
   display: inline-flex;
   align-items: center;
@@ -183,6 +195,11 @@ a {
   transform: translateY(-2px);
   border-color: rgba(31, 106, 84, 0.28);
   background: rgba(255, 255, 255, 0.92);
+}
+
+.secondary-button:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 3px;
 }
 
 [data-theme="dark"] .secondary-button {

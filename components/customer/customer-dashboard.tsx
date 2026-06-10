@@ -64,19 +64,19 @@ export function CustomerDashboard() {
               bookings, venue credits, packs, and offers that make return visits feel intentional.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-4">
+              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
                 <p className="section-eyebrow">Member</p>
                 <p className="mt-3 text-xl font-semibold">{customerExperience.user.name}</p>
                 <p className="mt-2 text-sm text-[var(--ink-soft)]">{customerExperience.profile.skillBand}</p>
               </article>
-              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-4">
+              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
                 <p className="section-eyebrow">Wallet balance</p>
                 <p className="mt-3 text-xl font-semibold">
                   {formatIndianCurrency(customerExperience.walletBalance)}
                 </p>
                 <p className="mt-2 text-sm text-[var(--ink-soft)]">Credits first, payment rails second</p>
               </article>
-              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-4">
+              <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
                 <p className="section-eyebrow">Favorite window</p>
                 <p className="mt-3 text-xl font-semibold">{customerExperience.profile.favoriteWindow}</p>
                 <p className="mt-2 text-sm text-[var(--ink-soft)]">Offers stay targeted to real habits</p>
@@ -274,7 +274,7 @@ export function CustomerDashboard() {
               </p>
               <div className="mt-5 space-y-3">
                 {customerExperience.walletEntries.map((entry) => (
-                  <div key={entry.id} className="rounded-[1.2rem] bg-white/70 px-4 py-3">
+                  <div key={entry.id} className="rounded-[1.2rem] bg-white/70 dark:bg-white/[0.06] px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-medium">{entry.note}</p>
                       <span className="text-sm font-semibold">
@@ -290,7 +290,7 @@ export function CustomerDashboard() {
             <article className="surface-card rounded-[2rem] p-6">
               <p className="section-eyebrow">Active products</p>
               <div className="mt-5 grid gap-4">
-                <div className="rounded-[1.3rem] bg-white/70 p-4">
+                <div className="rounded-[1.3rem] bg-white/70 dark:bg-white/[0.06] p-4">
                   <div className="flex items-center gap-3">
                     <Ticket className="h-5 w-5 text-[var(--accent)]" />
                     <p className="font-medium">
@@ -301,7 +301,7 @@ export function CustomerDashboard() {
                     {customerExperience.packSnapshot?.creditsRemaining ?? 0} credits remaining
                   </p>
                 </div>
-                <div className="rounded-[1.3rem] bg-white/70 p-4">
+                <div className="rounded-[1.3rem] bg-white/70 dark:bg-white/[0.06] p-4">
                   <div className="flex items-center gap-3">
                     <Sparkles className="h-5 w-5 text-[var(--accent-green)]" />
                     <p className="font-medium">
@@ -381,7 +381,7 @@ export function CustomerDashboard() {
             />
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               {catalog.offers.map((offer) => (
-                <article key={offer.id} className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-5">
+                <article key={offer.id} className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-5">
                   <p className="section-eyebrow">{offer.status}</p>
                   <h3 className="mt-3 text-xl font-semibold tracking-[-0.03em]">{offer.name}</h3>
                   <p className="mt-3 text-sm leading-7 text-[var(--ink-soft)]">{offer.headline}</p>
