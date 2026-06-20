@@ -36,6 +36,7 @@ export function CustomerBookingsPage() {
     cancelBooking,
     capabilities,
     customerExperience,
+    isSupabaseConfigured,
     resetDemoState,
     runtimeSource,
     setup,
@@ -88,6 +89,26 @@ export function CustomerBookingsPage() {
   const focusedSlot =
     filteredOpenSlots.find((entry) => entry.slot.id === selectedSlotId) ?? filteredOpenSlots[0] ?? null;
 
+  // When Supabase is configured but the active runtime is not the live supabase source,
+  // the visitor is on the live deployment while signed out / not bootstrapped. bookSlot
+  // would throw in that state, so disable the Book buttons and prompt sign-in instead of
+  // letting the click fail.
+  const requiresSignIn = isSupabaseConfigured && runtimeSource !== "supabase";
+
+  // The board used to hard-code "May". Derive the label from the inventory actually on
+  // screen (the earliest open slot's month), and fall back to the current month when no
+  // slots are loaded, so the filter never advertises a stale month.
+  const inventoryMonthLabel = useMemo(() => {
+    const formatMonth = (iso: string) =>
+      new Intl.DateTimeFormat("en-IN", { month: "long", timeZone: "Asia/Kolkata" }).format(
+        new Date(iso),
+      );
+    const earliest = openSlots
+      .map((entry) => entry.slot.startsAt)
+      .sort((a, b) => a.localeCompare(b))[0];
+    return earliest ? formatMonth(earliest) : formatMonth(new Date().toISOString());
+  }, [openSlots]);
+
   const liveAccessMessage =
     auth.status === "signed_out"
       ? "Sign in from the live access page to load customer availability and create real holds."
@@ -120,14 +141,14 @@ export function CustomerBookingsPage() {
             <div className="flex flex-wrap items-center gap-3">
               <p className="section-eyebrow">Court booking</p>
               <span className="rounded-full border border-[rgba(31,106,84,0.18)] bg-[rgba(31,106,84,0.08)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-deep)]">
-                May live board
+                {inventoryMonthLabel} live board
               </span>
             </div>
             <h1 className="mt-4 max-w-4xl text-5xl font-semibold tracking-[-0.05em] text-[var(--ink-strong)] sm:text-6xl">
               Book a court with a real hold.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--ink-soft)]">
-              Pick a May slot, reserve it for checkout, and keep the operator schedule in sync. The frontend only calls
+              Pick a {inventoryMonthLabel} slot, reserve it for checkout, and keep the operator schedule in sync. The frontend only calls
               booking APIs; conflict checks and payment state live on the server.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -221,7 +242,7 @@ export function CustomerBookingsPage() {
             <SectionHeading
               eyebrow="Filters"
               title="Choose date, court, and payment path."
-              description="The board narrows May inventory without hiding the booking rules behind the UI."
+              description={`The board narrows ${inventoryMonthLabel} inventory without hiding the booking rules behind the UI.`}
             />
             <div className="mt-7 grid gap-5">
               <div>
@@ -239,7 +260,7 @@ export function CustomerBookingsPage() {
                     }`}
                     onClick={() => setSelectedDate("all")}
                   >
-                    All May slots
+                    All {inventoryMonthLabel} slots
                   </button>
                   {dateOptions.map((option) => (
                     <button
@@ -318,14 +339,23 @@ export function CustomerBookingsPage() {
                         {formatIndianCurrency(focusedSlot.slot.priceInr)} · {formatModeLabel(focusedSlot.slot.paymentMode)}
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      className="primary-button w-fit px-4 py-2 text-sm"
-                      onClick={() => runAction(() => bookSlot(focusedSlot.slot.id))}
-                    >
-                      {focusedSlot.cta}
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
+                    {requiresSignIn ? (
+                      <div className="w-fit rounded-[1rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] px-4 py-3 text-sm text-[var(--ink-soft)]">
+                        <a href="/sign-in" className="font-semibold text-[var(--accent-deep)] underline">
+                          Sign in to book
+                        </a>{" "}
+                        and initialize live mode to create a real hold.
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="primary-button w-fit px-4 py-2 text-sm"
+                        onClick={() => runAction(() => bookSlot(focusedSlot.slot.id))}
+                      >
+                        {focusedSlot.cta}
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <p className="mt-4 text-sm leading-7 text-[var(--ink-soft)]">
@@ -341,7 +371,7 @@ export function CustomerBookingsPage() {
           <div className="surface-card-dark rounded-[2rem] p-6">
             <SectionHeading
               eyebrow="Availability"
-              title="May court inventory."
+              title={`${inventoryMonthLabel} court inventory.`}
               description="Tap a slot to inspect it, then create a hold from the summary or directly from the slot card."
               invert
             />
@@ -396,17 +426,28 @@ export function CustomerBookingsPage() {
                       </button>
                       <div className="mt-5 flex items-center justify-between gap-4 border-t border-white/10 pt-4">
                         <p className="text-xs leading-5 text-white/55">
-                          {entry.slot.confirmationMode === "review"
-                            ? "Request lands in the staff queue."
-                            : "Hold opens a payment-safe checkout path."}
+                          {requiresSignIn
+                            ? "Sign in and initialize live mode to book this slot."
+                            : entry.slot.confirmationMode === "review"
+                              ? "Request lands in the staff queue."
+                              : "Hold opens a payment-safe checkout path."}
                         </p>
-                        <button
-                          type="button"
-                          className="secondary-button secondary-button-dark px-4 py-2 text-sm"
-                          onClick={() => runAction(() => bookSlot(entry.slot.id))}
-                        >
-                          {entry.cta}
-                        </button>
+                        {requiresSignIn ? (
+                          <a
+                            href="/sign-in"
+                            className="secondary-button secondary-button-dark px-4 py-2 text-sm"
+                          >
+                            Sign in to book
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            className="secondary-button secondary-button-dark px-4 py-2 text-sm"
+                            onClick={() => runAction(() => bookSlot(entry.slot.id))}
+                          >
+                            {entry.cta}
+                          </button>
+                        )}
                       </div>
                     </article>
                   );

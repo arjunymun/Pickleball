@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { sendWhatsappMessage } from "@/lib/communications/whatsapp";
+import { getTwilioWhatsappEnv, sendWhatsappMessage } from "@/lib/communications/whatsapp";
 import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -37,6 +37,19 @@ export async function POST(request: Request) {
 
   if (!customerProfile.phone_e164) {
     return NextResponse.json({ error: "Customer phone number is missing for WhatsApp delivery." }, { status: 400 });
+  }
+
+  // WhatsApp delivery can only really happen when Twilio is configured. Without it,
+  // sendWhatsappMessage returns sent:false silently — surface that as a 503 config error
+  // so the operator UI shows a "needs configuration" notice instead of a false success.
+  if (!getTwilioWhatsappEnv()) {
+    return NextResponse.json(
+      {
+        error:
+          "WhatsApp delivery is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_WHATSAPP_FROM to enable messaging.",
+      },
+      { status: 503 },
+    );
   }
 
   const templateSlug = body.templateId.startsWith("template-")
