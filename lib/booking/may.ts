@@ -1,8 +1,32 @@
 const INDIA_TIMEZONE = "Asia/Kolkata";
-const MAY_2026_ANCHOR = "2026-05-08T09:00:00+05:30";
+
+// The seed expresses every slot, booking, and offer as a day-offset from this anchor
+// (e.g. +1 day = "tomorrow at sunrise", -2 days = "a recent completed booking"). A fixed
+// calendar anchor goes stale: once the real date passes it, every "future" slot becomes a
+// past slot and the availability engine marks the whole board "expired" — which is exactly
+// the empty "No slot / 0 court windows" demo failure. Anchoring to the current day in the
+// venue timezone keeps the relative scenario perpetually fresh wherever/whenever it renders.
+function getVenueTodayAnchor() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: INDIA_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  if (!year || !month || !day) {
+    throw new Error("Could not derive the venue anchor date.");
+  }
+
+  return new Date(`${year}-${month}-${day}T09:00:00+05:30`);
+}
 
 export function getMayAnchorDate() {
-  return new Date(MAY_2026_ANCHOR);
+  return getVenueTodayAnchor();
 }
 
 export function getMayRelativeIso(dayOffset: number, time: string) {

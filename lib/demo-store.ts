@@ -9,6 +9,7 @@ import {
   addWalletCredit as applyWalletCredit,
   approveBooking as applyApproveBooking,
   bookSlot as applyBookSlot,
+  type BookSlotOptions,
   cancelBooking as applyCancelBooking,
   checkInBooking as applyCheckInBooking,
   completeBooking as applyCompleteBooking,
@@ -50,6 +51,7 @@ function isDemoState(value: unknown): value is DemoState {
     Array.isArray(candidate.customerNotes) &&
     Array.isArray(candidate.operatorActivity) &&
     Array.isArray(candidate.communicationDeliveries) &&
+    Array.isArray(candidate.offerRedemptions) &&
     Boolean(candidate.venueSettings)
   );
 }
@@ -400,7 +402,7 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
   const adminDashboard = activeSnapshot.adminDashboard;
   const catalog = activeSnapshot.catalog;
 
-  async function bookSlot(slotId: string) {
+  async function bookSlot(slotId: string, options: BookSlotOptions = {}) {
     if (activeSnapshot.source === "supabase") {
       if (!activeSnapshot.capabilities.customerLive) {
         throw new Error("This signed-in account does not have a live customer profile ready yet.");
@@ -408,6 +410,8 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
 
       const payload = await postRuntimeMutation("/api/bookings/holds", {
         slotId,
+        // Forwarded so the live offer-redemption path (txcore) can read the same contract.
+        ...(options.offerId ? { offerId: options.offerId } : {}),
       });
       setRuntimeSnapshot(payload.snapshot);
       return payload.message;
@@ -417,7 +421,7 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       throw new Error("Demo bookings live on /demo. Sign in and initialize live mode to book from the main product.");
     }
 
-    return runMutation((draft) => applyBookSlot(draft, slotId, customerId));
+    return runMutation((draft) => applyBookSlot(draft, slotId, customerId, options));
   }
 
   async function startBookingCheckout(bookingId: string) {
@@ -641,8 +645,16 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
     return resetDemoState();
   }
 
+  // Demo actions only mutate state when the user is actually on a /demo/* route. On the
+  // production /admin/* and /app routes without Supabase, the same demo runtime backs the UI
+  // but the mutations throw — so surfaces use this to render a read-only state instead of
+  // letting a recruiter click buttons that error.
+  const isReadOnlyDemo = activeSnapshot.source !== "supabase" && !isDemoRoute;
+
   return {
     runtimeSource: activeSnapshot.source,
+    isDemoRoute,
+    isReadOnlyDemo,
     auth: activeSnapshot.auth,
     setup: activeSnapshot.setup,
     publicSite: activeSnapshot.publicSite,

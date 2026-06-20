@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { CalendarRange, Coins, Clock3, RotateCcw } from "lucide-react";
 
+import { DemoReadOnlyBanner } from "@/components/admin/demo-readonly-banner";
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatPercent, formatVenueDate, formatVenueRange } from "@/lib/formatters";
 import { formatModeLabel, getAvailabilityClasses, getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
+
+const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for the interactive walkthrough.";
 
 const initialNotice: NoticeState = {
   tone: "info",
@@ -15,8 +18,16 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminSchedulePage() {
-  const { adminDashboard, approveBooking, checkInBooking, completeBooking, markBookingNoShow, resetDemoState, runtimeSource } =
-    useSideoutDemo();
+  const {
+    adminDashboard,
+    approveBooking,
+    checkInBooking,
+    completeBooking,
+    isReadOnlyDemo,
+    markBookingNoShow,
+    resetDemoState,
+    runtimeSource,
+  } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   async function runAction(action: () => Promise<string> | string) {
@@ -36,6 +47,11 @@ export function AdminSchedulePage() {
 
   return (
     <div className="pt-8">
+      {isReadOnlyDemo ? (
+        <div className="mb-8">
+          <DemoReadOnlyBanner />
+        </div>
+      ) : null}
       <Reveal>
         <section className="grid gap-6 lg:grid-cols-[1.06fr_0.94fr]">
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
@@ -81,7 +97,9 @@ export function AdminSchedulePage() {
                       </div>
                       <button
                         type="button"
-                        className="primary-button px-4 py-2 text-sm"
+                        className="primary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isReadOnlyDemo}
+                        title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                         onClick={() => runAction(() => approveBooking(entry.booking.id))}
                       >
                         Approve hold
@@ -123,7 +141,9 @@ export function AdminSchedulePage() {
             )}
             <button
               type="button"
-              className="secondary-button px-4 py-2 text-sm"
+              className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isReadOnlyDemo}
+              title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
               onClick={() => runAction(resetDemoState)}
             >
               <RotateCcw className="h-4 w-4" />
@@ -184,7 +204,9 @@ export function AdminSchedulePage() {
                     {entry.blockingBooking && ["held", "payment_pending", "requested"].includes(entry.blockingBooking.status) ? (
                       <button
                         type="button"
-                        className="secondary-button px-4 py-2 text-sm"
+                        className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isReadOnlyDemo}
+                        title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                         onClick={() => runAction(() => approveBooking(entry.blockingBooking!.id))}
                       >
                         Approve
@@ -193,14 +215,18 @@ export function AdminSchedulePage() {
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          className="secondary-button px-4 py-2 text-sm"
+                          className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={isReadOnlyDemo}
+                          title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                           onClick={() => runAction(() => checkInBooking(entry.blockingBooking!.id))}
                         >
                           Check in
                         </button>
                         <button
                           type="button"
-                          className="secondary-button px-4 py-2 text-sm"
+                          className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={isReadOnlyDemo}
+                          title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                           onClick={() => runAction(() => markBookingNoShow(entry.blockingBooking!.id))}
                         >
                           No-show
@@ -209,7 +235,9 @@ export function AdminSchedulePage() {
                     ) : entry.blockingBooking?.status === "checked_in" ? (
                       <button
                         type="button"
-                        className="secondary-button px-4 py-2 text-sm"
+                        className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isReadOnlyDemo}
+                        title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                         onClick={() => runAction(() => completeBooking(entry.blockingBooking!.id))}
                       >
                         Mark completed

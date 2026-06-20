@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { RotateCcw, Sparkles, UserRound } from "lucide-react";
 
+import { DemoReadOnlyBanner } from "@/components/admin/demo-readonly-banner";
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatVenueRange } from "@/lib/formatters";
 import { getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
+
+const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for the interactive walkthrough.";
 
 const initialNotice: NoticeState = {
   tone: "info",
@@ -15,7 +18,8 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminCustomersPage() {
-  const { addCustomerNote, addWalletCredit, adminDashboard, resetDemoState, sendCommunication } = useSideoutDemo();
+  const { addCustomerNote, addWalletCredit, adminDashboard, isReadOnlyDemo, resetDemoState, sendCommunication } =
+    useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   async function runAction(action: () => Promise<string> | string) {
@@ -35,6 +39,11 @@ export function AdminCustomersPage() {
 
   return (
     <div className="pt-8">
+      {isReadOnlyDemo ? (
+        <div className="mb-8">
+          <DemoReadOnlyBanner />
+        </div>
+      ) : null}
       <Reveal>
         <section className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
@@ -99,7 +108,9 @@ export function AdminCustomersPage() {
             </div>
             <button
               type="button"
-              className="secondary-button px-4 py-2 text-sm"
+              className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isReadOnlyDemo}
+              title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
               onClick={() => runAction(resetDemoState)}
             >
               <RotateCcw className="h-4 w-4" />
@@ -167,18 +178,22 @@ export function AdminCustomersPage() {
                     <div className="grid gap-3 lg:min-w-[220px]">
                       <button
                         type="button"
-                        className="primary-button px-4 py-2 text-sm"
+                        className="primary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isReadOnlyDemo}
+                        title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                         onClick={() =>
                           runAction(() =>
                             addWalletCredit(customer.id, 300, `Recovery credit added for ${customer.name}`),
                           )
                         }
                       >
-                        Add INR 300
+                        Add {formatIndianCurrency(300)}
                       </button>
                       <button
                         type="button"
-                        className="secondary-button px-4 py-2 text-sm"
+                        className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isReadOnlyDemo}
+                        title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                         onClick={() =>
                           runAction(() =>
                             addCustomerNote(
@@ -192,7 +207,9 @@ export function AdminCustomersPage() {
                       </button>
                       <button
                         type="button"
-                        className="secondary-button px-4 py-2 text-sm"
+                        className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isReadOnlyDemo}
+                        title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                         onClick={() =>
                           runAction(() =>
                             sendCommunication(
