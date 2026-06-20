@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowUpRight, Compass, UserRound } from "lucide-react";
 
 import { AuthStatusPill } from "@/components/auth/auth-status-pill";
@@ -6,6 +7,7 @@ import { PwaInstallPrompt } from "@/components/ui/pwa-install-prompt";
 import { PreviewNav } from "@/components/ui/preview-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
+import { getAuthState } from "@/lib/auth";
 
 const customerNavItems = [
   { href: "/app", label: "Overview" },
@@ -19,6 +21,16 @@ export default async function CustomerLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const authState = await getAuthState();
+
+  // When Supabase is configured but the visitor is signed out, send them to sign-in
+  // instead of rendering an empty dashboard. The no-Supabase demo runtime
+  // (isConfigured=false, setupStatus="demo") falls through untouched so /app still
+  // renders the functional demo on the public deploy.
+  if (authState.isConfigured && authState.setupStatus !== "demo" && !authState.user) {
+    redirect("/sign-in?next=/app");
+  }
+
   return (
     <main className="page-frame min-h-screen px-6 pb-20 pt-6 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
