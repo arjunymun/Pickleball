@@ -20,6 +20,8 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 interface SignInPanelProps {
   isSupabaseConfigured: boolean;
+  /** Optional `?error=` query param from a failed auth redirect (see app/auth/callback). */
+  initialError?: string | null;
 }
 
 type AuthMode = "customer" | "operator";
@@ -33,10 +35,29 @@ type SubmitState = {
 const initialSubmitState: SubmitState = {
   tone: "idle",
   message:
-    "Use the live Sideout accounts for a real Supabase session now. SMS and email provider auth remain available when those providers are configured.",
+    "Use the demo Sideout accounts for a real Supabase session now. Email magic-link sign-in is available below; SMS OTP unlocks once a Supabase phone provider is configured.",
 };
 
 const isPhoneOtpEnabled = process.env.NEXT_PUBLIC_SUPABASE_PHONE_OTP_ENABLED === "true";
+
+// Only expose the internal diagnostics panel when explicitly opted in (demo story)
+// or when Supabase is absent (demo runtime) — never on a real production deploy.
+const showSystemStatusFlag = process.env.NEXT_PUBLIC_SHOW_SYSTEM_STATUS === "true";
+
+// Friendly copy for the error query param surfaced after a failed redirect (T05).
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  supabase_not_configured:
+    "Sign-in could not complete: Supabase is not configured for this deployment. Add the Supabase URL and anon key, then try again.",
+  client_init_failed:
+    "Sign-in could not complete: the Supabase client failed to initialize. Refresh and try again, or contact the venue admin.",
+  supabase_missing:
+    "Supabase is not configured yet. Add the URL, anon key, and service role key before using account access.",
+  portfolio_login_failed: "Sideout could not open that demo account. Please try again in a moment.",
+};
+
+function getAuthErrorMessage(error: string) {
+  return AUTH_ERROR_MESSAGES[error] ?? error;
+}
 
 function normalizePhoneNumber(value: string) {
   const compact = value.replace(/[^\d+]/g, "");
@@ -67,16 +88,22 @@ function getPhoneOtpErrorMessage(error: unknown) {
   return message;
 }
 
-export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
+export function SignInPanel({ isSupabaseConfigured, initialError }: SignInPanelProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<AuthMode>("customer");
+  // When SMS OTP is off, email magic-link ("operator" mode) is the primary self-serve path.
+  const [mode, setMode] = useState<AuthMode>(isPhoneOtpEnabled ? "customer" : "operator");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("+91 ");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitState, setSubmitState] = useState<SubmitState>(initialSubmitState);
+  const [submitState, setSubmitState] = useState<SubmitState>(
+    initialError ? { tone: "error", message: getAuthErrorMessage(initialError) } : initialSubmitState,
+  );
   const [activePortfolioRole, setActivePortfolioRole] = useState<PortfolioRole | null>(null);
+
+  // Diagnostics panel: opt-in flag, or demo runtime (Supabase absent). Off by default in prod.
+  const showSystemStatus = showSystemStatusFlag || !isSupabaseConfigured;
 
   const operatorRedirectUrl = useMemo(() => {
     const origin = typeof window === "undefined" ? "http://localhost:3000" : window.location.origin;
@@ -242,12 +269,12 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
+    <div className={`grid gap-6 ${showSystemStatus ? "lg:grid-cols-[1.12fr_0.88fr]" : ""}`}>
       <section className="surface-card-strong rounded-[2rem] p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-3">
           <span className="section-eyebrow">Live access</span>
           <span className="rounded-full border border-[rgba(31,106,84,0.18)] bg-[rgba(31,106,84,0.08)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-deep)]">
-            May 2026 workspace
+            Live workspace
           </span>
         </div>
         <h1 className="mt-4 max-w-4xl text-5xl font-semibold tracking-[-0.05em] text-[var(--ink-strong)] sm:text-6xl">
@@ -275,9 +302,9 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
                 <ArrowRight className="h-5 w-5 text-[var(--accent-deep)] transition group-hover:translate-x-0.5" />
               )}
             </span>
-            <span className="mt-5 block text-lg font-semibold text-[var(--ink-strong)]">Live customer account</span>
+            <span className="mt-5 block text-lg font-semibold text-[var(--ink-strong)]">Demo customer account</span>
             <span className="mt-2 block text-sm leading-6 text-[var(--ink-soft)]">
-              Sign in as a player, view May availability, hold a slot, and continue to checkout.
+              Sign in as a player, view live availability, hold a slot, and continue to checkout.
             </span>
           </button>
           <button
@@ -296,7 +323,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
                 <ArrowRight className="h-5 w-5 text-[var(--ink-strong)] transition group-hover:translate-x-0.5" />
               )}
             </span>
-            <span className="mt-5 block text-lg font-semibold text-[var(--ink-strong)]">Live operator account</span>
+            <span className="mt-5 block text-lg font-semibold text-[var(--ink-strong)]">Demo operator account</span>
             <span className="mt-2 block text-sm leading-6 text-[var(--ink-soft)]">
               Sign in as staff, manage the court schedule, blocks, pricing, bookings, and revenue.
             </span>
@@ -318,32 +345,38 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
         <div className="mt-8 rounded-[1.5rem] border border-[var(--line-soft)] bg-white/55 dark:bg-white/[0.04] p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-[var(--ink-strong)]">Provider auth rails</p>
+              <p className="text-sm font-semibold text-[var(--ink-strong)]">
+                {isPhoneOtpEnabled ? "Provider auth rails" : "Email magic-link sign-in"}
+              </p>
               <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-                Use these when Supabase SMS or email delivery is configured for production. Indian numbers are
-                normalized to E.164, for example +91 8126060338 becomes +918126060338.
+                {isPhoneOtpEnabled
+                  ? "Use these when Supabase SMS or email delivery is configured for production. Indian numbers are normalized to E.164, for example +91 8126060338 becomes +918126060338."
+                  : "We'll email you a one-tap link to sign in. SMS OTP becomes available once a Supabase phone provider is configured."}
               </p>
             </div>
-            <div className="inline-flex rounded-full border border-[var(--line-soft)] bg-white/80 p-1">
-              <button
-                type="button"
-                className={`rounded-full px-4 py-2 text-sm transition ${
-                  mode === "customer" ? "bg-[var(--ink-strong)] text-white" : "text-[var(--ink-soft)]"
-                }`}
-                onClick={() => setMode("customer")}
-              >
-                SMS OTP
-              </button>
-              <button
-                type="button"
-                className={`rounded-full px-4 py-2 text-sm transition ${
-                  mode === "operator" ? "bg-[var(--ink-strong)] text-white" : "text-[var(--ink-soft)]"
-                }`}
-                onClick={() => setMode("operator")}
-              >
-                Email link
-              </button>
-            </div>
+            {/* Only offer the SMS/Email toggle when SMS OTP is actually enabled; otherwise email is the sole, primary path. */}
+            {isPhoneOtpEnabled ? (
+              <div className="inline-flex rounded-full border border-[var(--line-soft)] bg-white/80 p-1">
+                <button
+                  type="button"
+                  className={`rounded-full px-4 py-2 text-sm transition ${
+                    mode === "customer" ? "bg-[var(--ink-strong)] text-white" : "text-[var(--ink-soft)]"
+                  }`}
+                  onClick={() => setMode("customer")}
+                >
+                  SMS OTP
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-full px-4 py-2 text-sm transition ${
+                    mode === "operator" ? "bg-[var(--ink-strong)] text-white" : "text-[var(--ink-soft)]"
+                  }`}
+                  onClick={() => setMode("operator")}
+                >
+                  Email link
+                </button>
+              </div>
+            ) : null}
           </div>
 
         {mode === "customer" ? (
@@ -423,6 +456,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
         </div>
       </section>
 
+      {showSystemStatus ? (
       <section className="surface-card-dark rounded-[2rem] p-6 sm:p-7">
         <p className="section-eyebrow !text-white/55">System status</p>
         <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-white">A real entry point for the club OS.</h2>
@@ -450,7 +484,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
               <p className="font-medium text-white">Booking-ready path</p>
             </div>
             <p className="mt-3 text-sm leading-7 text-white/70">
-              Customer sessions land on May availability. Operator sessions land on the live venue dashboard and schedule.
+              Customer sessions land on live availability. Operator sessions land on the live venue dashboard and schedule.
             </p>
           </article>
           <article className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
@@ -469,6 +503,7 @@ export function SignInPanel({ isSupabaseConfigured }: SignInPanelProps) {
           </a>
         </div>
       </section>
+      ) : null}
     </div>
   );
 }
