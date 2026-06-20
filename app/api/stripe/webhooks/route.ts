@@ -15,6 +15,9 @@ async function handleCheckoutCompleted(event: Stripe.Event) {
 
   if (session.metadata.kind === "booking" && session.metadata.bookingId) {
     const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : null;
+    // Checkout sends holdId as "" when no active hold exists; treat blank as null so we
+    // never try to write an empty string into the uuid hold_id FK column.
+    const holdId = session.metadata.holdId ? session.metadata.holdId : null;
 
     const { error } = await adminSupabase.rpc("confirm_booking_from_stripe", {
       checkout_session_id: session.id,
@@ -46,7 +49,7 @@ async function handleCheckoutCompleted(event: Stripe.Event) {
       {
         venue_id: session.metadata.venueId ?? null,
         booking_id: session.metadata.bookingId,
-        hold_id: session.metadata.holdId ?? null,
+        hold_id: holdId,
         customer_id: session.metadata.customerProfileId,
         stripe_checkout_session_id: session.id,
         stripe_payment_intent_id: paymentIntentId,
