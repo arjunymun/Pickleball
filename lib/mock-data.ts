@@ -214,6 +214,80 @@ export const bookableSlots: BookableSlot[] = [
     availabilityState: "limited",
     label: "Prime-Time Court",
   },
+  // Extra open inventory across multiple courts and windows keeps the customer availability
+  // board and the operator schedule full once seed bookings claim the earlier slots.
+  {
+    id: "slot-7",
+    templateId: "template-sunrise",
+    courtId: "court-3",
+    startsAt: getMayRelativeIso(1, "07:00"),
+    endsAt: getMayRelativeIso(1, "08:00"),
+    durationMinutes: 60,
+    capacity: 4,
+    priceInr: 700,
+    paymentMode: "online",
+    confirmationMode: "instant",
+    availabilityState: "open",
+    label: "Sunrise Rally",
+  },
+  {
+    id: "slot-8",
+    templateId: "template-prime",
+    courtId: "court-1",
+    startsAt: getMayRelativeIso(2, "19:00"),
+    endsAt: getMayRelativeIso(2, "20:00"),
+    durationMinutes: 60,
+    capacity: 4,
+    priceInr: 950,
+    paymentMode: "hybrid",
+    confirmationMode: "instant",
+    availabilityState: "open",
+    label: "Golden Hour Court",
+  },
+  {
+    id: "slot-9",
+    templateId: "template-sunrise",
+    courtId: "court-4",
+    startsAt: getMayRelativeIso(3, "06:00"),
+    endsAt: getMayRelativeIso(3, "07:00"),
+    durationMinutes: 60,
+    capacity: 4,
+    priceInr: 700,
+    paymentMode: "online",
+    confirmationMode: "instant",
+    availabilityState: "open",
+    label: "Sunrise Rally",
+  },
+  {
+    id: "slot-10",
+    templateId: "template-club",
+    courtId: "court-5",
+    startsAt: getMayRelativeIso(3, "08:00"),
+    endsAt: getMayRelativeIso(3, "09:00"),
+    durationMinutes: 60,
+    capacity: 4,
+    priceInr: 850,
+    paymentMode: "pay_at_venue",
+    confirmationMode: "review",
+    availabilityState: "open",
+    label: "Coach Hold",
+  },
+  // Dedicated review slot so the operator live queue ships with a ready-to-approve hold even
+  // before a recruiter creates one from the customer side.
+  {
+    id: "slot-11",
+    templateId: "template-prime",
+    courtId: "court-2",
+    startsAt: getMayRelativeIso(2, "20:00"),
+    endsAt: getMayRelativeIso(2, "21:00"),
+    durationMinutes: 60,
+    capacity: 4,
+    priceInr: 900,
+    paymentMode: "hybrid",
+    confirmationMode: "review",
+    availabilityState: "limited",
+    label: "Prime-Time Court",
+  },
 ];
 
 export const bookings: Booking[] = [
@@ -278,6 +352,17 @@ export const bookings: Booking[] = [
     bookedAt: getMayRelativeIso(-18, "08:00"),
     status: "canceled",
     paymentStatus: "credit_applied",
+    attendees: 4,
+  },
+  // Pre-seeded review hold so the operator live queue demonstrates the approve flow without
+  // first needing a booking from the customer demo.
+  {
+    id: "booking-8",
+    slotId: "slot-11",
+    customerId: "customer-kabir",
+    bookedAt: getMayRelativeIso(0, "07:45"),
+    status: "requested",
+    paymentStatus: "pending",
     attendees: 4,
   },
 ];
@@ -404,6 +489,7 @@ export const offers: Offer[] = [
     audience: "Players inactive for 10+ days",
     redemptionCap: 40,
     slotScope: "Sunrise and weekday early windows",
+    discountInr: 200,
   },
   {
     id: "offer-member",
@@ -415,6 +501,7 @@ export const offers: Offer[] = [
     audience: "Active memberships",
     redemptionCap: 20,
     slotScope: "Friday evenings",
+    discountInr: 150,
   },
   {
     id: "offer-launch",
@@ -426,6 +513,7 @@ export const offers: Offer[] = [
     audience: "Everyone",
     redemptionCap: 60,
     slotScope: "Sunset slots",
+    discountInr: 300,
   },
 ];
 

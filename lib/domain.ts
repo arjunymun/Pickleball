@@ -274,6 +274,7 @@ export interface Offer {
   audience: string;
   redemptionCap: number;
   slotScope: string;
+  discountInr: number;
 }
 
 export interface OfferRedemption {

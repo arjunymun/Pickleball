@@ -3,11 +3,14 @@
 import { useMemo, useState } from "react";
 import { ChartColumnIncreasing, RotateCcw, Sparkles, Ticket, Users2 } from "lucide-react";
 
+import { DemoReadOnlyBanner } from "@/components/admin/demo-readonly-banner";
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { formatIndianCurrency, formatVenueDate } from "@/lib/formatters";
 import { getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
+
+const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for the interactive walkthrough.";
 
 const initialNotice: NoticeState = {
   tone: "info",
@@ -15,7 +18,8 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminOffersPage() {
-  const { addWalletCredit, adminDashboard, catalog, resetDemoState, sendCommunication } = useSideoutDemo();
+  const { addWalletCredit, adminDashboard, catalog, isReadOnlyDemo, resetDemoState, sendCommunication } =
+    useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   const primaryRecoveryTarget = useMemo(() => adminDashboard.atRiskCustomers[0] ?? null, [adminDashboard.atRiskCustomers]);
@@ -37,6 +41,11 @@ export function AdminOffersPage() {
 
   return (
     <div className="pt-8">
+      {isReadOnlyDemo ? (
+        <div className="mb-8">
+          <DemoReadOnlyBanner />
+        </div>
+      ) : null}
       <Reveal>
         <section className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
@@ -81,7 +90,9 @@ export function AdminOffersPage() {
                 <div className="mt-6 flex flex-wrap gap-3">
                   <button
                     type="button"
-                    className="primary-button px-4 py-2 text-sm"
+                    className="primary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isReadOnlyDemo}
+                    title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                     onClick={() =>
                       runAction(() =>
                         addWalletCredit(
@@ -92,11 +103,13 @@ export function AdminOffersPage() {
                       )
                     }
                   >
-                    Issue INR 200 credit
+                    Issue {formatIndianCurrency(200)} credit
                   </button>
                   <button
                     type="button"
-                    className="secondary-button px-4 py-2 text-sm"
+                    className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isReadOnlyDemo}
+                    title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
                     onClick={() =>
                       runAction(() =>
                         sendCommunication(
@@ -138,7 +151,9 @@ export function AdminOffersPage() {
             </div>
             <button
               type="button"
-              className="secondary-button px-4 py-2 text-sm"
+              className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isReadOnlyDemo}
+              title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
               onClick={() => runAction(resetDemoState)}
             >
               <RotateCcw className="h-4 w-4" />

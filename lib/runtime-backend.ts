@@ -356,6 +356,7 @@ function mapOfferRow(row: Record<string, unknown>): Offer {
     audience: String(row.audience),
     redemptionCap: Number(row.redemption_cap),
     slotScope: String(row.slot_scope),
+    discountInr: Number(row.discount_inr ?? 0),
   };
 }
 

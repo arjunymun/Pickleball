@@ -5,6 +5,8 @@ import type {
   CommunicationDelivery,
   CommunicationTemplate,
   CustomerNote,
+  Offer,
+  OfferRedemption,
   OperatorActivityLog,
   VenueSettings,
   WalletLedgerEntry,
@@ -32,7 +34,7 @@ import {
 } from "@/lib/mock-data";
 import { getMayRelativeIso } from "@/lib/booking/may";
 
-export const DEMO_STATE_VERSION = 1;
+export const DEMO_STATE_VERSION = 2;
 
 export interface DemoState {
   version: number;
@@ -42,6 +44,7 @@ export interface DemoState {
   venueSettings: VenueSettings;
   operatorActivity: OperatorActivityLog[];
   communicationDeliveries: CommunicationDelivery[];
+  offerRedemptions: OfferRedemption[];
 }
 
 export interface DemoMutationResult {
@@ -76,6 +79,10 @@ function cloneCommunicationDelivery(entry: CommunicationDelivery): Communication
   return { ...entry };
 }
 
+function cloneOfferRedemption(entry: OfferRedemption): OfferRedemption {
+  return { ...entry };
+}
+
 export function createSeedDemoState(): DemoState {
   return {
     version: DEMO_STATE_VERSION,
@@ -85,6 +92,7 @@ export function createSeedDemoState(): DemoState {
     venueSettings: cloneVenueSettings(demoVenueSettings),
     operatorActivity: demoOperatorActivity.map(cloneOperatorActivity),
     communicationDeliveries: demoCommunicationDeliveries.map(cloneCommunicationDelivery),
+    offerRedemptions: offerRedemptions.map(cloneOfferRedemption),
   };
 }
 
@@ -105,6 +113,20 @@ export function getWalletBalance(state: DemoState, customerId: string) {
   return state.walletLedgerEntries
     .filter((entry) => entry.customerId === customerId)
     .reduce((total, entry) => total + entry.amountInr, 0);
+}
+
+export function getOfferById(offerId: string) {
+  return offers.find((offer) => offer.id === offerId);
+}
+
+// Offers carry a flat `discountInr` (mirrored from the `offers.discount_inr` column). When an
+// offer leaves that at 0, fall back to the venue's member discount as a percentage of the slot
+// price. The result is clamped so a booking can never settle below zero.
+function getOfferDiscountInr(offer: Offer, slot: BookableSlot, memberDiscountPercent: number) {
+  const discount =
+    offer.discountInr > 0 ? offer.discountInr : Math.round((slot.priceInr * memberDiscountPercent) / 100);
+
+  return Math.max(0, Math.min(discount, slot.priceInr));
 }
 
 export function getBlockingBookingForSlot(state: DemoState, slotId: string) {
@@ -436,7 +458,7 @@ export function getAdminDashboard(state: DemoState) {
       repeatPlayRate: (repeatPlayCount / customerProfiles.length) * 100,
       occupancyRate: (confirmedOrCompleted.length / bookableSlots.length) * 100,
       creditsExpiringSoon,
-      offersRedeemed: offerRedemptions.length,
+      offersRedeemed: state.offerRedemptions.length,
     },
     schedule,
     requestQueue,
@@ -507,10 +529,16 @@ function pushOperatorActivity(
   ];
 }
 
+export interface BookSlotOptions {
+  /** When set (e.g. booking-from-offer), applies the offer discount and tracks its redemption. */
+  offerId?: string;
+}
+
 export function bookSlot(
   state: DemoState,
   slotId: string,
   customerId = PREVIEW_CUSTOMER_ID,
+  options: BookSlotOptions = {},
 ): DemoMutationResult {
   const slot = getSlotById(slotId);
   if (!slot) {
@@ -521,7 +549,20 @@ export function bookSlot(
     throw new Error("That slot is already unavailable.");
   }
 
-  const useWallet = getWalletBalance(state, customerId) >= slot.priceInr && slot.paymentMode !== "pay_at_venue";
+  // Resolve the offer (if any) and the discount it applies. An offer only redeems when it is
+  // active and still under its redemption cap; otherwise the booking proceeds at full price so
+  // the demo never blocks on an exhausted promo.
+  const offer = options.offerId ? getOfferById(options.offerId) : undefined;
+  const offerRedemptionCount = offer
+    ? state.offerRedemptions.filter((entry) => entry.offerId === offer.id).length
+    : 0;
+  const offerIsRedeemable = Boolean(offer) && offer!.status === "active" && offerRedemptionCount < offer!.redemptionCap;
+  const discountInr = offerIsRedeemable
+    ? getOfferDiscountInr(offer!, slot, state.venueSettings.memberDiscountPercent)
+    : 0;
+  const chargeableInr = slot.priceInr - discountInr;
+
+  const useWallet = getWalletBalance(state, customerId) >= chargeableInr && slot.paymentMode !== "pay_at_venue";
   const nextStatus: Booking["status"] = slot.confirmationMode === "review" ? "requested" : "confirmed";
   const paymentStatus = getPaymentStatusForBooking(slot, nextStatus, useWallet);
 
@@ -533,6 +574,7 @@ export function bookSlot(
     status: nextStatus,
     paymentStatus,
     attendees: 4,
+    totalAmountInr: chargeableInr,
     confirmedAt: nextStatus === "confirmed" ? new Date().toISOString() : null,
     checkedInAt: null,
     completedAt: null,
@@ -553,29 +595,45 @@ export function bookSlot(
           id: createId("wallet"),
           customerId,
           createdAt: new Date().toISOString(),
-          amountInr: -slot.priceInr,
+          amountInr: -chargeableInr,
           kind: "credit_spent" as const,
           note: `Applied to ${slot.label}`,
         },
       ]
     : state.walletLedgerEntries;
 
+  const nextOfferRedemptions =
+    offerIsRedeemable && offer
+      ? [
+          ...state.offerRedemptions,
+          {
+            id: createId("redemption"),
+            offerId: offer.id,
+            customerId,
+            redeemedAt: new Date().toISOString(),
+            creditValueInr: discountInr,
+          },
+        ]
+      : state.offerRedemptions;
+
+  const discountSuffix = discountInr > 0 ? ` with ${offer?.name ?? "an offer"} saving ${discountInr} INR` : "";
   const message =
     nextStatus === "requested"
-      ? `${slot.label} requested. Staff will review this hold before it is confirmed.`
+      ? `${slot.label} requested${discountSuffix}. Staff will review this hold before it is confirmed.`
       : useWallet
-        ? `${slot.label} confirmed using venue credits.`
-        : `${slot.label} confirmed and marked for ${slot.paymentMode === "pay_at_venue" ? "venue settlement" : "online payment"}.`;
+        ? `${slot.label} confirmed using venue credits${discountSuffix}.`
+        : `${slot.label} confirmed${discountSuffix} and marked for ${slot.paymentMode === "pay_at_venue" ? "venue settlement" : "online payment"}.`;
 
   return {
     nextState: {
       ...state,
       bookings: nextBookings,
       walletLedgerEntries: nextWalletEntries,
+      offerRedemptions: nextOfferRedemptions,
       operatorActivity: pushOperatorActivity(
         state,
         nextStatus === "requested" ? "booking_requested" : "booking_created",
-        `${slot.label} ${nextStatus === "requested" ? "requested for operator review" : "confirmed from the customer surface"}.`,
+        `${slot.label} ${nextStatus === "requested" ? "requested for operator review" : "confirmed from the customer surface"}${discountSuffix}.`,
         customerId,
         createdBooking.id,
       ),
