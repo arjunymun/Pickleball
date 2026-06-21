@@ -503,7 +503,7 @@ export function OperatorDashboard() {
             <SectionHeading
               eyebrow="Offer control"
               title="Offers with a clear who, when, and why."
-              description="Every promo says who it's for, when it runs, and which slots it touches &mdash; so the front desk knows the point of it, not just the discount."
+              description="Every promo says who it's for, when it runs, and which slots it touches — so the front desk knows the point of it, not just the discount."
             />
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               {catalog.offers.map((offer) => (

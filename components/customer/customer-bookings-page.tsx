@@ -21,7 +21,7 @@ import { formatModeLabel, getAvailabilityClasses, getNoticeClasses, type NoticeS
 const initialNotice: NoticeState = {
   tone: "info",
   message:
-    "Sideout creates a temporary hold first. Checkout and webhook confirmation are handled server-side so the court is not double-booked.",
+    "We hold the court for you first, then take payment — so two people can never grab the same slot at once.",
 };
 
 function getDateKey(value: string) {
@@ -523,15 +523,15 @@ export function CustomerBookingsPage() {
 
           <div className="surface-card-strong rounded-[2rem] p-6">
             <SectionHeading
-              eyebrow="Checkout rules"
+              eyebrow="How booking works"
               title="What happens after you press book."
-              description="Sideout keeps the customer flow honest: holds are visible, payments are server-confirmed, and failed checkout releases inventory."
+              description="We hold the court for you, you pay, and it's confirmed. If you don't finish checkout, the slot goes straight back up for someone else."
             />
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               {[
-                ["1", "Hold", "The selected court/time is reserved temporarily."],
-                ["2", "Checkout", "Stripe opens only for a booking that belongs to you."],
-                ["3", "Confirm", "Webhook success marks the booking paid and confirmed."],
+                ["1", "Hold", "Your court and time are locked while you check out."],
+                ["2", "Pay", "Card payment opens only for your own booking."],
+                ["3", "Confirmed", "Once the payment clears, the court is yours."],
               ].map(([step, title, body]) => (
                 <article key={step} className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
                   <p className="grid h-9 w-9 place-items-center rounded-full bg-[var(--ink-strong)] text-sm font-semibold text-white">

@@ -26,11 +26,11 @@ export const PREVIEW_CUSTOMER_ID = "customer-rhea";
 export const venue: Venue = {
   id: "venue-sideout",
   name: "Sideout Club",
-  tagline: "Repeat-play software shaped from a real family-built venue.",
+  tagline: "A family-run pickleball club in the Dehradun foothills.",
   location: "Dehradun, Uttarakhand",
   timezone: "Asia/Kolkata",
   story:
-    "Five courts, warm foothill mornings, and a business that runs better when booking, retention, and member value live in one system.",
+    "Five courts, cool morning light off the foothills, and a small team that would rather know their regulars by name than chase a feed of walk-ins. The software just keeps that going when the courts get busy.",
 };
 
 export const courts: Court[] = [
@@ -125,7 +125,7 @@ export const slotTemplates: SlotTemplate[] = [
     confirmationMode: "review",
     paymentMode: "pay_at_venue",
     priceInr: 850,
-    description: "Manually reviewed holds for staff-led or high-touch requests.",
+    description: "Manually reviewed holds for lessons and staff-booked sessions.",
   },
 ];
 
@@ -399,14 +399,14 @@ export const membershipPlans: MembershipPlan[] = [
     name: "Club Pass",
     monthlyPriceInr: 1799,
     includedCredits: 2,
-    perks: ["Priority booking on prime-time holds", "10% lower member rate", "Exclusive sunrise offers"],
+    perks: ["First pick of prime-time slots", "10% off the member rate", "First dibs on sunrise offers"],
   },
   {
     id: "membership-founder",
     name: "Founding Circle",
     monthlyPriceInr: 2999,
     includedCredits: 4,
-    perks: ["Four monthly credits", "Guest-day unlocks", "Priority support and event holds"],
+    perks: ["Four credits every month", "Guest day passes", "Priority support and event holds"],
   },
 ];
 
@@ -486,7 +486,7 @@ export const offers: Offer[] = [
     status: "active",
     startsAt: getMayRelativeIso(-7, "00:00"),
     endsAt: getMayRelativeIso(7, "23:59"),
-    headline: "Come back before 8 AM and unlock INR 200 in venue credit.",
+    headline: "Play before 8 AM this week and ₹200 lands on your wallet.",
     audience: "Players inactive for 10+ days",
     redemptionCap: 40,
     slotScope: "Sunrise and weekday early windows",
@@ -510,7 +510,7 @@ export const offers: Offer[] = [
     status: "scheduled",
     startsAt: getMayRelativeIso(4, "00:00"),
     endsAt: getMayRelativeIso(18, "23:59"),
-    headline: "Launch pack with eight sunset credits and one guest unlock.",
+    headline: "Launch pack: eight sunset credits and a guest pass.",
     audience: "Everyone",
     redemptionCap: 60,
     slotScope: "Sunset slots",
