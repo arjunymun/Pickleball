@@ -11,7 +11,7 @@ import { getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
 
 const initialNotice: NoticeState = {
   tone: "info",
-  message: "This route packages the commercial layer of Sideout: offers, memberships, and packs that drive repeat play without making the venue feel discount-first.",
+  message: "Offers, memberships, and packs — small reasons for regulars to come back, without turning the place into a discount bin.",
 };
 
 // Contract seam with teammate "stagecraft": bookSlot (lib/demo-store.ts) gains an optional

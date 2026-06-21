@@ -65,10 +65,10 @@ export default function OpengraphImage() {
               color: INK,
             }}
           >
-            The operating system for a real pickleball venue.
+            A real pickleball club, run well.
           </div>
           <div style={{ fontSize: "32px", lineHeight: 1.4, color: FOREST_SOFT }}>
-            Customer booking and operator control in one product. Dehradun-first, repeat-play native.
+            Booking for players, a console for the front desk. Made in Dehradun.
           </div>
         </div>
 
