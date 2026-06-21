@@ -658,11 +658,15 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
   // but the mutations throw — so surfaces use this to render a read-only state instead of
   // letting a recruiter click buttons that error.
   const isReadOnlyDemo = activeSnapshot.source !== "supabase" && !isDemoRoute;
+  // reset() only runs on a /demo route backed by the local demo runtime. Both customer surfaces
+  // gate the "Reset demo" button on this single flag so it never renders where it would no-op.
+  const canResetDemo = isDemoRoute && activeSnapshot.source !== "supabase";
 
   return {
     runtimeSource: activeSnapshot.source,
     isDemoRoute,
     isReadOnlyDemo,
+    canResetDemo,
     auth: activeSnapshot.auth,
     setup: activeSnapshot.setup,
     publicSite: activeSnapshot.publicSite,

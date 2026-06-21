@@ -390,11 +390,19 @@ export function getAdminDashboard(state: DemoState) {
         .map((event) => new Date(event.attendedAt).getTime())
         .sort((first, second) => second - first)[0];
 
-      const hasUpcomingBooking = state.bookings.some(
-        (booking) =>
-          booking.customerId === profile.id &&
-          ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
-      );
+      // An "upcoming" booking must be both live in status AND on a future slot — otherwise a stale
+      // past booking would wrongly mask a genuinely lapsed customer from the at-risk list.
+      const venueNow = new Date(getMayRelativeIso(0, "09:00")).getTime();
+      const hasUpcomingBooking = state.bookings.some((booking) => {
+        if (
+          booking.customerId !== profile.id ||
+          !["held", "payment_pending", "requested", "confirmed"].includes(booking.status)
+        ) {
+          return false;
+        }
+        const slot = getSlotById(booking.slotId);
+        return Boolean(slot) && new Date(slot!.startsAt).getTime() > venueNow;
+      });
 
       return {
         profile,

@@ -415,6 +415,26 @@ export function OperatorDashboard() {
                 ))}
               </div>
             </article>
+
+            <article className="surface-card rounded-[2rem] p-6">
+              <p className="section-eyebrow">Recent activity</p>
+              <div className="mt-5 grid gap-3">
+                {adminDashboard.operatorActivity.length > 0 ? (
+                  adminDashboard.operatorActivity.slice(0, 4).map((entry) => (
+                    <div key={entry.id} className="rounded-[1.2rem] bg-white/70 px-4 py-3">
+                      <p className="text-sm font-medium capitalize text-[var(--ink-strong)]">
+                        {entry.action.replaceAll("_", " ")}
+                      </p>
+                      <p className="mt-1 text-sm leading-7 text-[var(--ink-soft)]">{entry.detail}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm leading-7 text-[var(--ink-soft)]">
+                    Operator actions (approvals, check-ins, credits) appear here as you use the console.
+                  </p>
+                )}
+              </div>
+            </article>
           </div>
         </Reveal>
       </section>
