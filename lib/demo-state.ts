@@ -500,7 +500,7 @@ function getPaymentStatusForBooking(
     return "credit_applied";
   }
 
-  if (status === "requested") {
+  if (status === "requested" || status === "payment_pending") {
     return "pending";
   }
 
@@ -563,7 +563,16 @@ export function bookSlot(
   const chargeableInr = slot.priceInr - discountInr;
 
   const useWallet = getWalletBalance(state, customerId) >= chargeableInr && slot.paymentMode !== "pay_at_venue";
-  const nextStatus: Booking["status"] = slot.confirmationMode === "review" ? "requested" : "confirmed";
+  // An instant online slot the wallet can't cover enters payment_pending so the customer can step
+  // through hold -> checkout -> confirmed (the demo's Stripe story). Wallet-covered and pay-at-venue
+  // bookings confirm immediately; review slots wait in the operator queue.
+  const needsOnlineCheckout = !useWallet && slot.paymentMode !== "pay_at_venue";
+  const nextStatus: Booking["status"] =
+    slot.confirmationMode === "review"
+      ? "requested"
+      : needsOnlineCheckout
+        ? "payment_pending"
+        : "confirmed";
   const paymentStatus = getPaymentStatusForBooking(slot, nextStatus, useWallet);
 
   const createdBooking: Booking = {
@@ -692,6 +701,45 @@ export function cancelBooking(
       ),
     },
     message: `${slot.label} canceled. Value returned as venue credit where applicable.`,
+  };
+}
+
+export function confirmBookingCheckout(state: DemoState, bookingId: string): DemoMutationResult {
+  const booking = state.bookings.find((entry) => entry.id === bookingId);
+  if (!booking) {
+    throw new Error("Booking not found.");
+  }
+
+  if (!["held", "payment_pending"].includes(booking.status)) {
+    throw new Error("Only a held or payment-pending booking can be checked out.");
+  }
+
+  const slot = getSlotById(booking.slotId)!;
+
+  const nextBookings = state.bookings.map((entry) =>
+    entry.id === bookingId
+      ? {
+          ...entry,
+          status: "confirmed" as const,
+          confirmedAt: new Date().toISOString(),
+          paymentStatus: getPaymentStatusForBooking(slot, "confirmed", false),
+        }
+      : entry,
+  );
+
+  return {
+    nextState: {
+      ...state,
+      bookings: nextBookings,
+      operatorActivity: pushOperatorActivity(
+        state,
+        "checkout_confirmed",
+        `${slot.label} paid and confirmed through Stripe-style checkout.`,
+        booking.customerId,
+        booking.id,
+      ),
+    },
+    message: `Payment confirmed. ${slot.label} is now booked.`,
   };
 }
 

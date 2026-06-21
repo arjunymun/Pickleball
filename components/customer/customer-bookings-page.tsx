@@ -498,7 +498,7 @@ export function CustomerBookingsPage() {
                         >
                           Cancel
                         </button>
-                        {runtimeSource === "supabase" && ["held", "payment_pending"].includes(booking.status) ? (
+                        {["supabase", "demo"].includes(runtimeSource) && ["held", "payment_pending"].includes(booking.status) ? (
                           <button
                             type="button"
                             className="primary-button px-4 py-2 text-sm"
