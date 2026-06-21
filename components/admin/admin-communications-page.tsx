@@ -14,7 +14,7 @@ const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for 
 const initialNotice: NoticeState = {
   tone: "info",
   message:
-    "WhatsApp is now a first-class operator workflow in Sideout, with reusable templates, delivery history, and recovery nudges tied to real customer context.",
+    "WhatsApp templates and delivery history in one place — confirmations, reminders, and recovery nudges, next to the bookings they're about.",
 };
 
 export function AdminCommunicationsPage() {
@@ -48,11 +48,11 @@ export function AdminCommunicationsPage() {
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
             <p className="section-eyebrow !text-white/55">Communications</p>
             <h1 className="mt-4 text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
-              WhatsApp workflows that feel native to the venue.
+              WhatsApp that lives with the bookings.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">
-              Booking confirmations, recovery nudges, membership reminders, and expiring-value prompts all belong in
-              the same operator system as the bookings and credits they reference.
+              Confirmations, recovery nudges, and membership reminders sit right next to the bookings and credits
+              they&apos;re about, so every message carries the context behind it.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <article className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
