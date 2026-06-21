@@ -14,7 +14,7 @@ const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for 
 
 const initialNotice: NoticeState = {
   tone: "info",
-  message: "This operator console shares the same demo state as /app. Booking, approval, and credit actions all persist across both experiences.",
+  message: "Everything you do here sticks. Approvals, check-ins, and credit changes save straight away and show up on the customer side.",
 };
 
 export function OperatorDashboard() {
@@ -40,22 +40,22 @@ export function OperatorDashboard() {
     {
       label: "Repeat-play rate",
       value: formatPercent(adminDashboard.metrics.repeatPlayRate),
-      detail: "Customers with more than one booking this cycle.",
+      detail: "Players who've booked more than once this cycle.",
     },
     {
       label: "Occupancy",
       value: formatPercent(adminDashboard.metrics.occupancyRate),
-      detail: "Confirmed and completed bookings against the live slot set.",
+      detail: "Confirmed and completed bookings across today's courts.",
     },
     {
       label: "Credits expiring",
       value: `${adminDashboard.metrics.creditsExpiringSoon}`,
-      detail: "Pack balances that should trigger a retention touchpoint.",
+      detail: "Pack credits low enough that it's worth a nudge.",
     },
     {
       label: "Offer response",
       value: `${adminDashboard.metrics.offersRedeemed}`,
-      detail: "Tracked redemptions in the current promo cycle.",
+      detail: "Offer redemptions so far this cycle.",
     },
   ];
 
@@ -88,11 +88,11 @@ export function OperatorDashboard() {
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
             <p className="section-eyebrow !text-white/55">Operator OS</p>
             <h1 className="mt-4 max-w-3xl text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
-              Retention, approvals, and customer value in one operating surface.
+              Run the whole evening from one screen.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">
-              This is where Sideout becomes more than a booking clone. Staff gets a live queue, customer intelligence,
-              and commercial actions that can change behavior without leaving the venue workflow.
+              Staff work off a live queue: approve holds, check players in, fix a credit, and catch who&apos;s slipping
+              away &mdash; without clicking through to four other pages.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               {adminMetrics.slice(0, 2).map((metric) => (
@@ -201,8 +201,8 @@ export function OperatorDashboard() {
           <div className="surface-card-strong rounded-[2rem] p-6">
             <SectionHeading
               eyebrow="Schedule control"
-              title="Slot templates, queue context, and live inventory on one board."
-              description="The schedule layer is not just a calendar. It tells staff which courts are free, which ones are already held, and where an approval or recovery action changes the day."
+              title="Every court for the day, on one board."
+              description="See which courts are free, which are already held, and where a single approval reshapes the rest of the evening."
             />
             <div className="mt-8 grid gap-4">
               {adminDashboard.schedule.map((entry) => (
@@ -314,11 +314,11 @@ export function OperatorDashboard() {
             <article className="surface-card rounded-[2rem] p-6">
               <p className="section-eyebrow">Operator controls</p>
               <p className="mt-4 text-2xl font-semibold tracking-[-0.04em]">
-                Give the customer side a real business action.
+                Drop a credit and watch it land.
               </p>
               <p className="mt-4 text-sm leading-7 text-[var(--ink-soft)]">
-                This adds a recovery credit directly to the preview customer and changes the wallet-based booking path
-                back on `/app`.
+                Add a recovery credit straight to a customer&apos;s wallet. They&apos;ll see it the next time they open
+                the app to book.
               </p>
               <div className="mt-6 grid gap-3">
                 <button
@@ -468,8 +468,8 @@ export function OperatorDashboard() {
           <div className="surface-card-strong rounded-[2rem] p-6">
             <SectionHeading
               eyebrow="Customer intelligence"
-              title="Profiles that stay useful after the booking is made."
-              description="Owners and staff can see who belongs to which rhythm: prime-time regulars, offer-responsive members, pack holders about to lapse, and new players worth nurturing."
+              title="Know your players, not just their bookings."
+              description="See who's who at a glance: the prime-time regulars, the members who chase every offer, the pack holders running low, and the new faces worth keeping."
             />
             <div className="mt-8 overflow-hidden rounded-[1.6rem] border border-[var(--line-soft)] bg-white/65">
               <div className="grid grid-cols-[1.4fr_1fr_1fr_0.9fr] gap-4 border-b border-[var(--line-soft)] px-4 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">
@@ -502,8 +502,8 @@ export function OperatorDashboard() {
           <div className="surface-card-strong rounded-[2rem] p-6">
             <SectionHeading
               eyebrow="Offer control"
-              title="Promotions with audience, timing, and slot intent attached."
-              description="The operator should know which offer is live, who it is aimed at, and why it exists in the schedule, especially when the product is optimizing repeat play instead of one-off discount volume."
+              title="Offers with a clear who, when, and why."
+              description="Every promo says who it's for, when it runs, and which slots it touches &mdash; so the front desk knows the point of it, not just the discount."
             />
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               {catalog.offers.map((offer) => (
