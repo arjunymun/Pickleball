@@ -180,6 +180,12 @@ a {
   box-shadow: 0 24px 44px rgba(221, 105, 56, 0.28);
 }
 
+.primary-button:disabled:hover,
+.secondary-button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .primary-button:focus-visible {
   outline: 2px solid var(--accent-green);
   outline-offset: 3px;

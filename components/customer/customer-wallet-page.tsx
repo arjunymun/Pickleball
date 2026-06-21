@@ -15,7 +15,7 @@ const initialNotice: NoticeState = {
 };
 
 export function CustomerWalletPage() {
-  const { bookSlot, customerExperience, resetDemoState } = useSideoutDemo();
+  const { bookSlot, customerExperience, resetDemoState, isDemoRoute } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
 
   const recommendedSlot = useMemo(
@@ -118,14 +118,16 @@ export function CustomerWalletPage() {
               <p className="section-eyebrow">Live value state</p>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--ink-soft)]">{notice.message}</p>
             </div>
-            <button
-              type="button"
-              className="secondary-button px-4 py-2 text-sm"
-              onClick={() => runAction(resetDemoState)}
-            >
-              <RotateCcw className="h-4 w-4" />
-              Reset demo
-            </button>
+            {isDemoRoute ? (
+              <button
+                type="button"
+                className="secondary-button px-4 py-2 text-sm"
+                onClick={() => runAction(resetDemoState)}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset demo
+              </button>
+            ) : null}
           </div>
         </section>
       </Reveal>

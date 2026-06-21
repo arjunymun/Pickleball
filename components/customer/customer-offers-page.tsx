@@ -14,6 +14,11 @@ const initialNotice: NoticeState = {
   message: "This route packages the commercial layer of Sideout: offers, memberships, and packs that drive repeat play without making the venue feel discount-first.",
 };
 
+// Contract seam with teammate "stagecraft": bookSlot (lib/demo-store.ts) gains an optional
+// options arg carrying the redeemed offer. Param name is `offerId` on both the live holds
+// API and the demo store's applyBookSlot.
+type BookSlotWithOffer = (slotId: string, options?: { offerId?: string }) => Promise<string>;
+
 export function CustomerOffersPage() {
   const { authStatus, bookSlot, capabilities, catalog, customerExperience, resetDemoState, runtimeSource } =
     useSideoutDemo();
@@ -23,6 +28,11 @@ export function CustomerOffersPage() {
     () => catalog.offers.filter((offer) => offer.status === "active"),
     [catalog.offers],
   );
+
+  // Stripe-backed checkout only works against the live Supabase runtime with commerce
+  // configured. In demo / non-live mode the API returns 503, so disable the buttons
+  // instead of letting them look clickable and fail.
+  const commerceReady = runtimeSource === "supabase" && capabilities.commerceLive;
 
   async function runAction(action: () => Promise<string> | string) {
     try {
@@ -55,7 +65,15 @@ export function CustomerOffersPage() {
       throw new Error("No eligible slot is open for that offer right now.");
     }
 
-    return await bookSlot(matchedSlot.slot.id);
+    // CONTRACT (teammate "stagecraft"): bookSlot threads the selected offer through to
+    // the live holds API (/api/bookings/holds accepts `offerId`) and to the demo store's
+    // applyBookSlot, both keyed on the exact param name `offerId`. bookSlot is owned by
+    // lib/demo-store.ts (stagecraft territory); this seam declares the optional second
+    // argument we depend on so the discount + redemption decrement actually apply instead
+    // of the previous cosmetic booking. Remove the BookSlotWithOffer adapter once
+    // stagecraft widens bookSlot's published signature.
+    const bookSlotWithOffer = bookSlot as BookSlotWithOffer;
+    return await bookSlotWithOffer(matchedSlot.slot.id, { offerId });
   }
 
   async function startCheckout(kind: "pack" | "membership", resourceId: string) {
@@ -230,10 +248,14 @@ export function CustomerOffersPage() {
                     <p className="mt-2 text-sm text-[var(--ink-soft)]">{plan.perks[0]}</p>
                     <button
                       type="button"
-                      className="secondary-button mt-4 px-4 py-2 text-sm"
+                      className={`secondary-button mt-4 px-4 py-2 text-sm ${
+                        commerceReady ? "" : "cursor-not-allowed opacity-50"
+                      }`}
+                      disabled={!commerceReady}
+                      title={commerceReady ? undefined : "Available in live mode"}
                       onClick={() => runAction(() => startCheckout("membership", plan.id))}
                     >
-                      {capabilities.commerceLive ? "Start membership checkout" : "Stripe-ready checkout"}
+                      {commerceReady ? "Start membership checkout" : "Available in live mode"}
                     </button>
                   </div>
                 ))}
@@ -255,10 +277,14 @@ export function CustomerOffersPage() {
                     <p className="mt-2 text-sm text-[var(--ink-soft)]">{pack.description}</p>
                     <button
                       type="button"
-                      className="secondary-button mt-4 px-4 py-2 text-sm"
+                      className={`secondary-button mt-4 px-4 py-2 text-sm ${
+                        commerceReady ? "" : "cursor-not-allowed opacity-50"
+                      }`}
+                      disabled={!commerceReady}
+                      title={commerceReady ? undefined : "Available in live mode"}
                       onClick={() => runAction(() => startCheckout("pack", pack.id))}
                     >
-                      {capabilities.commerceLive ? "Buy this pack" : "Stripe-ready purchase"}
+                      {commerceReady ? "Buy this pack" : "Available in live mode"}
                     </button>
                   </div>
                 ))}

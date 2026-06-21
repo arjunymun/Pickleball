@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { RotateCcw, Settings2, ShieldCheck } from "lucide-react";
 
+import { DemoReadOnlyBanner } from "@/components/admin/demo-readonly-banner";
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { useSideoutDemo } from "@/lib/demo-store";
 import { getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
+
+const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for the interactive walkthrough.";
 
 const initialNotice: NoticeState = {
   tone: "info",
@@ -15,7 +18,7 @@ const initialNotice: NoticeState = {
 };
 
 export function AdminSettingsPage() {
-  const { adminDashboard, resetDemoState, updateVenueSettings, venueSettings } = useSideoutDemo();
+  const { adminDashboard, isReadOnlyDemo, resetDemoState, updateVenueSettings, venueSettings } = useSideoutDemo();
   const [notice, setNotice] = useState<NoticeState>(initialNotice);
   const [formState, setFormState] = useState({
     cancellationCutoffHours: String(venueSettings?.cancellationCutoffHours ?? 6),
@@ -44,6 +47,11 @@ export function AdminSettingsPage() {
 
   return (
     <div className="pt-8">
+      {isReadOnlyDemo ? (
+        <div className="mb-8">
+          <DemoReadOnlyBanner />
+        </div>
+      ) : null}
       <Reveal>
         <section className="grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
@@ -113,7 +121,9 @@ export function AdminSettingsPage() {
             </div>
             <button
               type="button"
-              className="secondary-button px-4 py-2 text-sm"
+              className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isReadOnlyDemo}
+              title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
               onClick={() => runAction(resetDemoState)}
             >
               <RotateCcw className="h-4 w-4" />
@@ -135,6 +145,9 @@ export function AdminSettingsPage() {
               className="mt-8 grid gap-4 md:grid-cols-2"
               onSubmit={(event) => {
                 event.preventDefault();
+                if (isReadOnlyDemo) {
+                  return;
+                }
                 void runAction(() =>
                   updateVenueSettings({
                     cancellationCutoffHours: Number(formState.cancellationCutoffHours),
@@ -221,7 +234,12 @@ export function AdminSettingsPage() {
                 />
               </label>
               <div className="md:col-span-2">
-                <button type="submit" className="primary-button px-4 py-2 text-sm">
+                <button
+                  type="submit"
+                  className="primary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isReadOnlyDemo}
+                  title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
+                >
                   Save venue settings
                 </button>
               </div>

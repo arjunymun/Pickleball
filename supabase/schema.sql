@@ -193,7 +193,10 @@ create table offers (
   headline text not null,
   audience text not null,
   redemption_cap integer not null,
-  slot_scope text not null
+  slot_scope text not null,
+  -- Flat INR discount applied to total_amount_inr when this offer is redeemed and
+  -- recorded as the offer_redemptions.credit_value_inr. 0 = no monetary discount.
+  discount_inr integer not null default 0 check (discount_inr >= 0)
 );
 
 create table offer_redemptions (
@@ -2102,7 +2105,11 @@ begin
 end;
 $$;
 
-create or replace function public.create_booking_hold_for_current_user(slot_uuid uuid, hold_minutes integer default 10)
+create or replace function public.create_booking_hold_for_current_user(
+  slot_uuid uuid,
+  hold_minutes integer default 10,
+  offer_uuid uuid default null
+)
 returns text
 language plpgsql
 security definer
@@ -2110,10 +2117,14 @@ set search_path = public
 as $$
 declare
   slot_row bookable_slots%rowtype;
+  offer_row offers%rowtype;
   customer_profile_id uuid;
   new_booking_id uuid;
   new_hold_id uuid;
   expires_at_value timestamptz;
+  offer_discount_inr integer := 0;
+  final_amount_inr integer;
+  redemption_count integer;
 begin
   if auth.uid() is null then
     raise exception 'Authentication required.';
@@ -2155,6 +2166,44 @@ begin
     raise exception 'That slot is already unavailable.';
   end if;
 
+  -- Resolve and validate the offer (if one was selected) so the discount and the
+  -- redemption-cap decrement happen atomically inside the same transaction that
+  -- creates the booking. Lock the offer row to serialize concurrent redemptions.
+  if offer_uuid is not null then
+    select *
+    into offer_row
+    from offers
+    where id = offer_uuid
+      and venue_id = slot_row.venue_id
+    for update;
+
+    if offer_row.id is null then
+      raise exception 'Offer not found for this venue.';
+    end if;
+
+    if offer_row.status <> 'active' then
+      raise exception 'That offer is not currently active.';
+    end if;
+
+    if now() < offer_row.starts_at or now() > offer_row.ends_at then
+      raise exception 'That offer is outside its redemption window.';
+    end if;
+
+    select count(*)
+    into redemption_count
+    from offer_redemptions
+    where offer_id = offer_row.id;
+
+    if redemption_count >= offer_row.redemption_cap then
+      raise exception 'That offer has reached its redemption cap.';
+    end if;
+
+    -- Never discount below zero.
+    offer_discount_inr := least(offer_row.discount_inr, slot_row.price_inr);
+  end if;
+
+  final_amount_inr := greatest(slot_row.price_inr - offer_discount_inr, 0);
+
   expires_at_value := now() + make_interval(mins => greatest(hold_minutes, 5));
 
   insert into bookings (
@@ -2181,9 +2230,15 @@ begin
     case when slot_row.payment_mode = 'pay_at_venue' then 'pay_at_venue'::booking_payment_status else 'pending'::booking_payment_status end,
     greatest(slot_row.capacity, 1),
     expires_at_value,
-    slot_row.price_inr
+    final_amount_inr
   )
   returning id into new_booking_id;
+
+  -- Record the redemption so the cap decrements and reporting reflects the discount.
+  if offer_uuid is not null then
+    insert into offer_redemptions (offer_id, customer_id, redeemed_at, credit_value_inr)
+    values (offer_row.id, customer_profile_id, now(), offer_discount_inr);
+  end if;
 
   insert into booking_holds (
     venue_id,
@@ -2218,6 +2273,15 @@ begin
     customer_profile_id,
     new_booking_id
   );
+
+  if offer_discount_inr > 0 then
+    return concat(
+      slot_row.label,
+      ' held for checkout with ₹',
+      offer_discount_inr::text,
+      ' offer discount applied.'
+    );
+  end if;
 
   return concat(slot_row.label, ' held for checkout.');
 end;

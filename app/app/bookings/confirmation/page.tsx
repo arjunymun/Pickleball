@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, CreditCard, ShieldCheck } from "lucide-react";
 
+import { BookingStatus } from "./booking-status";
+
 export const metadata = {
   title: "Booking Confirmation",
 };
@@ -21,9 +23,12 @@ export default async function BookingConfirmationPage({
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--ink-soft)]">
           The checkout return page does not fake success. The booking becomes confirmed only after the verified Stripe
-          webhook updates the server-side record. If the webhook is still processing, the booking page will show the
-          latest pending state.
+          webhook updates the server-side record. If the webhook is still processing, this page keeps checking until the
+          booking is confirmed.
         </p>
+        <div className="mt-8">
+          <BookingStatus bookingId={params.booking ?? null} />
+        </div>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-5">
             <CheckCircle2 className="h-5 w-5 text-[var(--accent-green)]" />

@@ -155,6 +155,9 @@ export function RecruiterDemoPage() {
                   <article key={plan.id} className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-5">
                     <p className="section-eyebrow">Membership</p>
                     <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">{plan.name}</h3>
+                    <p className="mt-2 text-sm font-medium text-[var(--ink-strong)]">
+                      {formatIndianCurrency(plan.monthlyPriceInr)}/mo
+                    </p>
                     <p className="mt-3 text-sm leading-7 text-[var(--ink-soft)]">{plan.perks[0]}</p>
                   </article>
                 ))}
