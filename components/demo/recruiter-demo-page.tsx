@@ -51,8 +51,12 @@ export function RecruiterDemoPage() {
             <Link href="/demo/operator" className="secondary-button px-4 py-2 text-sm">
               Operator walkthrough
             </Link>
-            <Link href="/app" className="primary-button px-4 py-2 text-sm">
-              Live app
+            <Link
+              href="/app"
+              className="primary-button px-4 py-2 text-sm"
+              title="The authenticated live product — requires sign-in. The walkthroughs above need no account."
+            >
+              Live app (sign-in)
               <ArrowRight className="h-4 w-4" />
             </Link>
           </nav>

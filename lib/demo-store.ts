@@ -14,6 +14,7 @@ import {
   cancelBooking as applyCancelBooking,
   checkInBooking as applyCheckInBooking,
   completeBooking as applyCompleteBooking,
+  confirmBookingCheckout as applyConfirmCheckout,
   createSeedDemoState,
   DEMO_STATE_VERSION,
   getCommercialCatalog,
@@ -452,7 +453,9 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
       throw new Error("Checkout is live-only. Use /demo for the narrated booking walkthrough.");
     }
 
-    return "In the live app this opens Stripe Checkout. In the recruiter demo, the booking state is kept local so the flow is easy to explain.";
+    // In the recruiter demo there is no real Stripe redirect; advancing the booking locally lets the
+    // hold -> checkout -> confirmed lifecycle play out so the webhook story is demonstrable.
+    return runMutation((draft) => applyConfirmCheckout(draft, bookingId));
   }
 
   async function cancelBooking(bookingId: string, actorLabel = "Customer") {
@@ -655,11 +658,15 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
   // but the mutations throw — so surfaces use this to render a read-only state instead of
   // letting a recruiter click buttons that error.
   const isReadOnlyDemo = activeSnapshot.source !== "supabase" && !isDemoRoute;
+  // reset() only runs on a /demo route backed by the local demo runtime. Both customer surfaces
+  // gate the "Reset demo" button on this single flag so it never renders where it would no-op.
+  const canResetDemo = isDemoRoute && activeSnapshot.source !== "supabase";
 
   return {
     runtimeSource: activeSnapshot.source,
     isDemoRoute,
     isReadOnlyDemo,
+    canResetDemo,
     auth: activeSnapshot.auth,
     setup: activeSnapshot.setup,
     publicSite: activeSnapshot.publicSite,

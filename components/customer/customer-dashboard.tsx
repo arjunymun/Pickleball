@@ -22,6 +22,7 @@ export function CustomerDashboard() {
     bootstrapVenue,
     bookSlot,
     cancelBooking,
+    canResetDemo,
     catalog,
     customerExperience,
     isSupabaseConfigured,
@@ -155,14 +156,16 @@ export function CustomerDashboard() {
                   Demo backend
                 </span>
               )}
-              <button
-                type="button"
-                className="secondary-button px-4 py-2 text-sm"
-                onClick={() => runAction(resetDemoState)}
-              >
-                <RotateCcw className="h-4 w-4" />
-                Reset demo
-              </button>
+              {canResetDemo ? (
+                <button
+                  type="button"
+                  className="secondary-button px-4 py-2 text-sm"
+                  onClick={() => runAction(resetDemoState)}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Reset demo
+                </button>
+              ) : null}
             </div>
           </div>
         </section>
@@ -347,7 +350,7 @@ export function CustomerDashboard() {
                         >
                           Cancel
                         </button>
-                        {runtimeSource === "supabase" && ["held", "payment_pending"].includes(booking.status) ? (
+                        {["supabase", "demo"].includes(runtimeSource) && ["held", "payment_pending"].includes(booking.status) ? (
                           <button
                             type="button"
                             className="primary-button px-4 py-2 text-sm"

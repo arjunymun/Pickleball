@@ -323,9 +323,10 @@ export const bookings: Booking[] = [
     slotId: "slot-5",
     customerId: "customer-tara",
     bookedAt: getMayRelativeIso(-4, "13:00"),
-    status: "requested",
+    status: "canceled",
     paymentStatus: "pay_at_venue",
     attendees: 2,
+    canceledAt: getMayRelativeIso(-3, "10:00"),
   },
   {
     id: "booking-5",
@@ -569,6 +570,13 @@ export const customerNotes: CustomerNote[] = [
     authoredBy: "Aarav Yadav",
     createdAt: getMayRelativeIso(-7, "18:00"),
     body: "Brings guests often. Invite to early founding-circle preview.",
+  },
+  {
+    id: "note-3",
+    customerId: "customer-tara",
+    authoredBy: "Naina Joshi",
+    createdAt: getMayRelativeIso(-3, "12:00"),
+    body: "Redeemed the sunrise offer once but hasn't rebooked. Prime win-back target.",
   },
 ];
 
