@@ -1,6 +1,7 @@
 "use client";
 
 import type { Session as SupabaseSession, User as SupabaseUser } from "@supabase/supabase-js";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import type { VenueSettings } from "@/lib/domain";
@@ -320,9 +321,13 @@ export function useSideoutDemo(customerId = PREVIEW_CUSTOMER_ID) {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const demoSnapshot = useMemo(() => createDemoRuntimeSnapshot(state, customerId), [customerId, state]);
   const [runtimeSnapshot, setRuntimeSnapshot] = useState<RuntimeSnapshot | null>(null);
-  const [isDemoRoute] = useState(
-    () => typeof window !== "undefined" && window.location.pathname.startsWith("/demo"),
-  );
+  // Must be derived from usePathname (not window.location): window is undefined during the
+  // static prerender, so a window-based check renders false on the server. With NEXT_PUBLIC
+  // Supabase env present on Vercel, that pushed /demo into the live-required empty branch
+  // ("No slot / 0 court windows") and caused a hydration mismatch. usePathname resolves
+  // correctly during SSR and on the client, so the demo prerenders its real seed.
+  const pathname = usePathname();
+  const isDemoRoute = pathname?.startsWith("/demo") ?? false;
   const [authStatus, setAuthStatus] = useState<"loading" | "signed_in" | "signed_out">(
     Boolean(getSupabasePublicEnv()) ? "loading" : "signed_out",
   );
