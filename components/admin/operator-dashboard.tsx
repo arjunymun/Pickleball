@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarRange, ChartColumnIncreasing, Coins, Clock3, RotateCcw, Ticket, Users2 } from "lucide-react";
+import { CalendarRange, ChartColumnIncreasing, Coins, Clock3, RotateCcw, Send, Ticket, Users2 } from "lucide-react";
 
 import { DemoReadOnlyBanner } from "@/components/admin/demo-readonly-banner";
 import { Reveal } from "@/components/ui/reveal";
@@ -25,6 +25,10 @@ export function OperatorDashboard() {
     approveBooking,
     bootstrapVenue,
     catalog,
+    checkInBooking,
+    completeBooking,
+    markBookingNoShow,
+    sendCommunication,
     isReadOnlyDemo,
     isSupabaseConfigured,
     resetDemoState,
@@ -250,9 +254,40 @@ export function OperatorDashboard() {
                       >
                         Approve
                       </button>
+                    ) : entry.blockingBooking?.status === "confirmed" ? (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={isReadOnlyDemo}
+                          title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
+                          onClick={() => runAction(() => checkInBooking(entry.blockingBooking!.id))}
+                        >
+                          Check in
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={isReadOnlyDemo}
+                          title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
+                          onClick={() => runAction(() => markBookingNoShow(entry.blockingBooking!.id))}
+                        >
+                          No-show
+                        </button>
+                      </div>
+                    ) : entry.blockingBooking?.status === "checked_in" ? (
+                      <button
+                        type="button"
+                        className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isReadOnlyDemo}
+                        title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
+                        onClick={() => runAction(() => completeBooking(entry.blockingBooking!.id))}
+                      >
+                        Mark completed
+                      </button>
                     ) : entry.blockingBooking ? (
                       <span className="inline-flex items-center rounded-full bg-[var(--background-strong)] px-4 py-2 text-sm font-medium text-[var(--ink-soft)]">
-                        Customer held
+                        {entry.blockingBooking.status.replaceAll("_", " ")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-[rgba(31,106,84,0.12)] px-4 py-2 text-sm font-medium text-[var(--accent-green)]">
@@ -309,6 +344,28 @@ export function OperatorDashboard() {
                 </button>
                 <button
                   type="button"
+                  className="primary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isReadOnlyDemo}
+                  title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
+                  onClick={() =>
+                    runAction(() => {
+                      if (!previewCustomer) {
+                        throw new Error("No live customer is available for the recovery message yet.");
+                      }
+
+                      return sendCommunication(
+                        previewCustomer.id,
+                        "template-sunrise-recovery",
+                        `Sideout prepared a recovery WhatsApp for ${previewCustomer.name}.`,
+                      );
+                    })
+                  }
+                >
+                  <Send className="h-4 w-4" />
+                  Send WhatsApp nudge
+                </button>
+                <button
+                  type="button"
                   className="secondary-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={isReadOnlyDemo}
                   title={isReadOnlyDemo ? READ_ONLY_TOOLTIP : undefined}
@@ -317,6 +374,24 @@ export function OperatorDashboard() {
                   <RotateCcw className="h-4 w-4" />
                   Reset demo state
                 </button>
+              </div>
+            </article>
+
+            <article className="surface-card rounded-[2rem] p-6">
+              <p className="section-eyebrow">WhatsApp delivery log</p>
+              <div className="mt-5 grid gap-3">
+                {adminDashboard.communicationDeliveries.length > 0 ? (
+                  adminDashboard.communicationDeliveries.slice(0, 4).map((delivery) => (
+                    <div key={delivery.id} className="rounded-[1.2rem] bg-white/70 px-4 py-3">
+                      <p className="text-sm font-medium text-[var(--ink-strong)]">{delivery.status}</p>
+                      <p className="mt-1 text-sm leading-7 text-[var(--ink-soft)]">{delivery.body}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm leading-7 text-[var(--ink-soft)]">
+                    No messages sent yet. Use the WhatsApp nudge above to queue a recovery message.
+                  </p>
+                )}
               </div>
             </article>
 
