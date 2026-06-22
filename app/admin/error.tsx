@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 export default function AdminError({
   error,
   reset,
@@ -7,6 +9,10 @@ export default function AdminError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    console.error("[sideout] operator console error", error);
+  }, [error]);
+
   return (
     <section className="mt-8 surface-card-dark rounded-[2rem] p-8">
       <p className="section-eyebrow !text-white/55">Operator error</p>
@@ -14,8 +20,11 @@ export default function AdminError({
         The operator console needs another load.
       </h1>
       <p className="mt-4 max-w-2xl text-base leading-8 text-white/72">
-        {error.message || "Something went wrong while loading the operator experience."}
+        Something went wrong while loading the operator experience. Give it another go below.
       </p>
+      {error.digest ? (
+        <p className="mt-3 text-xs uppercase tracking-[0.18em] text-white/40">Reference: {error.digest}</p>
+      ) : null}
       <button type="button" className="primary-button mt-6 px-4 py-2 text-sm" onClick={reset}>
         Retry operator console
       </button>
