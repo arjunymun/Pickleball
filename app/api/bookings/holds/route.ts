@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getHttpStatusForError, requireLiveSupabase } from "@/lib/booking/server";
 import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
+import { createHoldSchema, readJsonBody } from "@/lib/validation";
 
 // Postgres error messages / RPC exceptions that mean the slot can no longer be held
 // (someone else booked it, a hold already exists, or an overlap constraint fired).
@@ -30,15 +31,11 @@ function isConflictError(error: { message?: string; code?: string } | null) {
 export async function POST(request: Request) {
   try {
     const { supabase } = await requireLiveSupabase();
-    const body = (await request.json()) as {
-      slotId?: string;
-      holdMinutes?: number;
-      offerId?: string;
-    };
-
-    if (!body.slotId) {
-      return NextResponse.json({ error: "slotId is required." }, { status: 400 });
+    const parsed = await readJsonBody(request, createHoldSchema);
+    if (parsed.error) {
+      return parsed.error;
     }
+    const body = parsed.data;
 
     // Pass offerId through so the RPC can apply the discount and increment the
     // offer's redemption count atomically. When no offer is selected we send null

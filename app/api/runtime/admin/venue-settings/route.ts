@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { readJsonBody, venueSettingsSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
@@ -14,17 +15,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Supabase server client unavailable." }, { status: 503 });
   }
 
-  const body = (await request.json()) as {
-    venueId?: string;
-    cancellationCutoffHours?: number;
-    bookingWindowDays?: number;
-    reminderLeadHours?: number[];
-    publicContactPhone?: string;
-    publicContactEmail?: string;
-    publicWhatsappNumber?: string;
-    memberDiscountPercent?: number;
-    featuredAnnouncement?: string;
-  };
+  const parsed = await readJsonBody(request, venueSettingsSchema);
+  if (parsed.error) {
+    return parsed.error;
+  }
+  const body = parsed.data;
 
   const snapshotBefore = await getSupabaseRuntimeSnapshot();
   const venueId = body.venueId ?? snapshotBefore.setup.venueId;

@@ -4,6 +4,7 @@ import { getSiteUrl } from "@/lib/supabase/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getStripeServerClient } from "@/lib/stripe/server";
+import { checkoutSchema, readJsonBody } from "@/lib/validation";
 
 async function getOrCreateStripeCustomer(params: {
   stripeCustomerId: string | null;
@@ -48,14 +49,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
-  const body = (await request.json()) as {
-    kind?: "pack" | "membership";
-    resourceId?: string;
-  };
-
-  if (!body.kind || !body.resourceId) {
-    return NextResponse.json({ error: "kind and resourceId are required." }, { status: 400 });
+  const parsed = await readJsonBody(request, checkoutSchema);
+  if (parsed.error) {
+    return parsed.error;
   }
+  const body = parsed.data;
 
   const { data: appUserRow } = await supabase
     .from("users")

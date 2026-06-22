@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { readJsonBody, walletCreditSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
@@ -14,15 +15,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Supabase server client unavailable." }, { status: 503 });
   }
 
-  const body = (await request.json()) as {
-    customerId?: string;
-    amountInr?: number;
-    note?: string;
-  };
-
-  if (!body.customerId || !body.amountInr || !body.note) {
-    return NextResponse.json({ error: "customerId, amountInr, and note are required." }, { status: 400 });
+  const parsed = await readJsonBody(request, walletCreditSchema);
+  if (parsed.error) {
+    return parsed.error;
   }
+  const body = parsed.data;
 
   const { data, error } = await supabase.rpc("add_wallet_credit_as_admin", {
     customer_uuid: body.customerId,
