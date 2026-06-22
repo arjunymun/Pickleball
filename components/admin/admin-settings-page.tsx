@@ -14,7 +14,7 @@ const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for 
 const initialNotice: NoticeState = {
   tone: "info",
   message:
-    "Venue settings now live in the shared runtime, so cancellation policy, booking window, reminders, and public contact details stop being hidden constants.",
+    "Set the venue's rules in one place: cancellation policy, how far ahead people can book, reminder timing, and the public contact details.",
 };
 
 export function AdminSettingsPage() {
@@ -57,11 +57,11 @@ export function AdminSettingsPage() {
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
             <p className="section-eyebrow !text-white/55">Venue settings</p>
             <h1 className="mt-4 text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
-              The operational defaults behind the Sideout experience.
+              The rules that run the venue.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">
-              Cancellation rules, booking windows, reminder lead times, and contact details should be operator-owned
-              settings, not values scattered through code and mock copy.
+              Cancellation rules, booking windows, reminder timing, contact details &mdash; the venue owns all of it, and
+              a change takes effect the moment you save.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <article className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
@@ -138,8 +138,8 @@ export function AdminSettingsPage() {
           <div className="surface-card-strong rounded-[2rem] p-6">
             <SectionHeading
               eyebrow="Configuration"
-              title="Venue rules that shape both the customer and operator experience."
-              description={`These settings belong to ${adminDashboard.venue.name}. Updating them should immediately influence live-mode behavior and public trust surfaces.`}
+              title="Rules players and staff both feel."
+              description={`These belong to ${adminDashboard.venue.name}. Change one and it shows up right away — for players and at the front desk.`}
             />
             <form
               className="mt-8 grid gap-4 md:grid-cols-2"

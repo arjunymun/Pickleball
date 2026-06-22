@@ -14,7 +14,7 @@ const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for 
 
 const initialNotice: NoticeState = {
   tone: "info",
-  message: "The customer route is now its own operator surface too: notes, inactivity, upcoming bookings, and manual credit nudges live here together.",
+  message: "The people side in one place: notes, who's gone quiet, who's booked next, and a quick credit when it'll help.",
 };
 
 export function AdminCustomersPage() {
@@ -49,11 +49,11 @@ export function AdminCustomersPage() {
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
             <p className="section-eyebrow !text-white/55">Customer intelligence</p>
             <h1 className="mt-4 text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
-              Profiles that still matter after the booking is made.
+              The people behind the bookings.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">
-              This route is where owners and staff can decide who needs a recovery touch, who already has momentum, and
-              which customers deserve manual value before they lapse.
+              See at a glance who&apos;s slipping, who&apos;s on a roll, and who&apos;s worth a credit before they drift
+              off for good.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <article className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
@@ -125,8 +125,8 @@ export function AdminCustomersPage() {
           <div className="surface-card-strong rounded-[2rem] p-6">
             <SectionHeading
               eyebrow="Directory"
-              title="A working customer roster with notes and actionability."
-              description="This is intentionally more useful than a generic table. Every row should answer whether the customer is healthy, at risk, or ready for a commercial nudge."
+              title="A roster you can actually act on."
+              description="Every row tells you something: who's healthy, who's at risk, and who's ready for a nudge."
             />
             <div className="mt-8 grid gap-4">
               {adminDashboard.customers.map((customer) => (

@@ -3,11 +3,11 @@ export const site = {
   location: "Dehradun, India",
   timezone: "Asia/Kolkata",
   description:
-    "Premium repeat-play software for a family-built pickleball venue in Dehradun.",
+    "Booking, memberships, and front-desk tools for a family-run pickleball club in Dehradun.",
   nav: [
     { label: "Story", href: "#story" },
     { label: "Availability", href: "#availability" },
     { label: "Memberships", href: "#memberships" },
-    { label: "Operator OS", href: "#operator-os" },
+    { label: "Operators", href: "#operator-os" },
   ],
 } as const;

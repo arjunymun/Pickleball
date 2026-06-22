@@ -278,11 +278,11 @@ export function SignInPanel({ isSupabaseConfigured, initialError }: SignInPanelP
           </span>
         </div>
         <h1 className="mt-4 max-w-4xl text-5xl font-semibold tracking-[-0.05em] text-[var(--ink-strong)] sm:text-6xl">
-          Enter the real Sideout booking platform.
+          Sign in as a player, or as the venue.
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--ink-soft)]">
-          Start with a real Supabase Auth session. Customer access opens the booking flow; operator access opens the
-          venue operating system.
+          A real signed-in session, not throwaway demo state. Player access opens booking and your wallet; operator
+          access opens the schedule and the front-desk tools.
         </p>
 
         <div className="mt-8 grid gap-3 md:grid-cols-2">

@@ -11,7 +11,7 @@ import { getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
 
 const initialNotice: NoticeState = {
   tone: "info",
-  message: "This route packages the commercial layer of Sideout: offers, memberships, and packs that drive repeat play without making the venue feel discount-first.",
+  message: "Offers, memberships, and packs — small reasons for regulars to come back, without turning the place into a discount bin.",
 };
 
 // Contract seam with teammate "stagecraft": bookSlot (lib/demo-store.ts) gains an optional
@@ -108,12 +108,11 @@ export function CustomerOffersPage() {
           <div className="surface-card-strong rounded-[2rem] p-6 sm:p-8">
             <p className="section-eyebrow">Offers and plans</p>
             <h1 className="mt-4 text-5xl font-semibold tracking-[-0.05em] text-[var(--ink-strong)] sm:text-6xl">
-              The commercial layer that makes repeat visits feel intentional.
+              Credits, packs, and a membership worth keeping.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--ink-soft)]">
-              This is where Sideout stops feeling like a booking site and starts feeling like a productized club:
-              targeted recovery offers, member-aware plans, and packs that create better behavior without cheapening the
-              venue.
+              Small, specific reasons for regulars to come back: a credit here, a pack that pays off over a month, a
+              member rate that adds up. No turning the place into a discount bin.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-4">
@@ -139,7 +138,7 @@ export function CustomerOffersPage() {
           </div>
 
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-7">
-            <p className="section-eyebrow !text-white/55">Positioning</p>
+            <p className="section-eyebrow !text-white/55">How we think about offers</p>
             <div className="mt-5 grid gap-4">
               <article className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center gap-3">
@@ -147,16 +146,16 @@ export function CustomerOffersPage() {
                   <p className="font-medium text-white">Offers should feel earned, not desperate</p>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-white/70">
-                  Recovery credit, sunrise nudges, and member-only perks all keep the product premium while still giving the operator commercial leverage.
+                  A credit back here, a sunrise nudge there, a perk for members &mdash; enough to bring people back without cheapening the courts.
                 </p>
               </article>
               <article className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-5 w-5 text-white/80" />
-                  <p className="font-medium text-white">Membership is more than a badge</p>
+                  <p className="font-medium text-white">Membership pays for itself</p>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-white/70">
-                  It changes booking priority, value drops, and the feeling of belonging to the venue.
+                  Better booking priority, the lower member rate, and first look at new offers.
                 </p>
               </article>
             </div>
@@ -193,7 +192,7 @@ export function CustomerOffersPage() {
             <SectionHeading
               eyebrow="Active offers"
               title="Promotions designed around return behavior."
-              description="Each offer tries to move a specific part of the venue calendar, not just raise discount volume."
+              description="Each offer targets a specific gap in the week, not blanket discounting."
             />
             <div className="mt-8 grid gap-4">
               {catalog.offers.map((offer) => (

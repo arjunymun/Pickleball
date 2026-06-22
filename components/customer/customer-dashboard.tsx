@@ -58,11 +58,11 @@ export function CustomerDashboard() {
           <div className="surface-card-strong rounded-[2rem] p-6 sm:p-8">
             <p className="section-eyebrow">Customer app</p>
             <h1 className="mt-4 max-w-3xl text-5xl font-semibold tracking-[-0.05em] text-[var(--ink-strong)] sm:text-6xl">
-              A booking experience that already feels like membership.
+              Your courts, credits, and next game in one place.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--ink-soft)]">
-              Guests can browse availability first. Once they log in, Sideout turns into a repeat-play layer with live
-              bookings, venue credits, packs, and offers that make return visits feel intentional.
+              Browse the courts before you sign in. Once you&apos;re in, you get your live bookings, wallet credit,
+              packs, and any offers waiting for you.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">

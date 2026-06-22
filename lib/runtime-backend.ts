@@ -48,7 +48,7 @@ const DEMO_VENUE_SETTINGS: VenueSettings = {
   publicContactEmail: "play@sideout.club",
   publicWhatsappNumber: "+91 98765 43110",
   memberDiscountPercent: 10,
-  featuredAnnouncement: "Sunrise courts are the cleanest way back into your weekly rhythm.",
+  featuredAnnouncement: "Early-morning courts are the easiest way back into a weekly habit.",
 };
 
 function buildPublicSiteSnapshot(params: {

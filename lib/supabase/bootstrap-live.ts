@@ -146,7 +146,7 @@ export async function bootstrapLiveVenueForAuthUser(authUser: SupabaseAuthUser) 
         public_whatsapp_number: authUser.phone ?? "+91 98765 43110",
         member_discount_percent: 10,
         featured_announcement:
-          "Sunrise inventory is the cleanest place to win back off-rhythm regulars.",
+          "Sunrise slots are the easiest way to win back regulars who've gone quiet.",
       },
     ],
     { onConflict: "venue_id" },
@@ -500,7 +500,7 @@ export async function bootstrapLiveVenueForAuthUser(authUser: SupabaseAuthUser) 
     starts_at: buildIndiaTimestamp(baseDayOffset - 1, "00:00"),
     ends_at: buildIndiaTimestamp(baseDayOffset + 5, "23:00"),
     headline:
-      "Bring back off-rhythm regulars with a sunrise credit that feels thoughtful, not discount-first.",
+      "Win back a quiet regular with a small sunrise credit — a nudge, not a fire sale.",
     audience:
       "Targets players who used to visit before work but have gone quiet for 7+ days.",
     redemption_cap: 20,

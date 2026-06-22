@@ -31,19 +31,19 @@ import { site } from "@/lib/site";
 
 const productPillars = [
   {
-    title: "Guest browse, member depth",
+    title: "Browse first, sign in later",
     copy:
-      "Availability, offers, and pricing can be explored without friction. The moment someone wants to book or buy, the product tightens around identity, credits, and repeat-play value.",
+      "Scan the week's courts, prices, and offers without making an account. We only ask who you are once you're ready to hold a slot or spend credits.",
   },
   {
-    title: "Bookings with business logic",
+    title: "Booking that works like the front desk",
     copy:
-      "Some slots confirm instantly, some route through staff review, and cancellation value returns as credit instead of defaulting to a refund. The product respects how real venues actually operate.",
+      "Open-play courts confirm on the spot. Coached and review slots wait for a staff nod. Cancel in time and your money comes back as venue credit, not a refund you'll forget you have.",
   },
   {
-    title: "Retention as a first-class surface",
+    title: "We notice when a regular goes quiet",
     copy:
-      "The operator view is not just occupancy charts. It surfaces expiring value, at-risk players, offer response, and the customers most likely to convert again.",
+      "The operator view skips the vanity charts. It shows credits about to expire, players who've stopped turning up, and who's most likely to rebook, while there's still time to do something about it.",
   },
 ];
 
@@ -79,19 +79,19 @@ export default async function HomePage() {
 
           <div className="grid gap-10 pt-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:pt-16">
             <Reveal className="max-w-3xl">
-              <p className="section-eyebrow">Premium club, warm roots</p>
+              <p className="section-eyebrow">A real club in {venue.location}</p>
               <div className="mt-5 flex flex-wrap gap-3">
-                <span className="hero-badge">Guest browse enabled</span>
-                <span className="hero-badge">Credits over cash refunds</span>
-                <span className="hero-badge">Operator-grade retention</span>
+                <span className="hero-badge">Browse without an account</span>
+                <span className="hero-badge">Credit, not refunds</span>
+                <span className="hero-badge">Front-desk tools built in</span>
               </div>
               <h1 className="display-font text-balance mt-5 text-6xl font-medium leading-[0.92] tracking-[-0.06em] text-[var(--ink-strong)] sm:text-7xl lg:text-[5.5rem]">
-                Pickleball software that feels like a premium venue, not a template dashboard.
+                Good courts, fair pricing, and a club that remembers you.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--ink-soft)]">
-                Sideout is a repeat-play club OS built around a real family-run venue in {venue.location}. It combines
-                guest-friendly booking, memberships, packs, and offers with an operator console designed to keep courts
-                full and customers coming back.
+                Sideout runs a family-owned pickleball venue in {venue.location}: booking, memberships, packs, and offers
+                for players, plus a console that keeps the front desk on top of the day. Everything below is browsable
+                without signing in.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link href="/app" className="primary-button">
@@ -135,7 +135,7 @@ export default async function HomePage() {
                     <div>
                       <p className="mono-detail text-white/55">Tonight at Sideout</p>
                       <p className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
-                        Peak-hour courts with member-aware pricing.
+                        Tonight&apos;s peak slots, with members paying less.
                       </p>
                     </div>
                     <div className="rounded-full border border-white/10 px-3 py-2 text-sm text-white/70">Live preview</div>
@@ -180,8 +180,8 @@ export default async function HomePage() {
       <Reveal className="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12" delay={0.04}>
         <section id="story" className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
           <SectionHeading
-            eyebrow="Why it feels different"
-            title="A productized venue, not a sports-tech clone."
+            eyebrow="How the club runs"
+            title="Built the way the venue actually works."
             description={venue.story}
           />
           <div className="grid gap-4 md:grid-cols-3">
@@ -202,8 +202,8 @@ export default async function HomePage() {
         <Reveal>
           <SectionHeading
             eyebrow="Availability"
-            title="The customer surface sells convenience before it asks for trust."
-            description="Users can browse real court windows, compare slot rules, and see pricing without hitting an auth wall. That first impression matters when this site is also your venue storefront."
+            title="See the courts and prices before anyone asks you to log in."
+            description="Players check the week's slots, compare what each one allows, and see the price up front — no account, no wall. It's the first thing a new player runs into, so we keep it simple."
           />
         </Reveal>
         <div className="mt-10 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
@@ -212,7 +212,7 @@ export default async function HomePage() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="section-eyebrow">Guest browsing</p>
-                  <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">Slot cards built for quick decisions.</h3>
+                  <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">Slot cards you can read at a glance.</h3>
                 </div>
                 <div className="inline-flex rounded-full border border-[var(--line-soft)] px-4 py-2 text-sm text-[var(--ink-soft)]">
                   Asia/Kolkata
@@ -269,24 +269,24 @@ export default async function HomePage() {
           <Reveal delay={0.12}>
             <div className="grid gap-5">
               <div className="surface-card rounded-[2rem] p-6">
-                <p className="section-eyebrow">What the venue is selling</p>
+                <p className="section-eyebrow">What you&apos;re booking</p>
                 <ul className="mt-5 grid gap-4">
                   <li className="rounded-[1.3rem] bg-white/65 dark:bg-white/[0.05] p-4">
                     <div className="flex items-center gap-3">
                       <Users2 className="h-5 w-5 text-[var(--accent-green)]" />
-                      <p className="font-medium">Court slots with mixed confirmation rules</p>
+                      <p className="font-medium">Court slots &mdash; some confirm instantly, some staff review first</p>
                     </div>
                   </li>
                   <li className="rounded-[1.3rem] bg-white/65 dark:bg-white/[0.05] p-4">
                     <div className="flex items-center gap-3">
                       <Sparkles className="h-5 w-5 text-[var(--accent)]" />
-                      <p className="font-medium">Offers that target repeat play, not blanket discounting</p>
+                      <p className="font-medium">Offers aimed at regulars, not blanket discounts</p>
                     </div>
                   </li>
                   <li className="rounded-[1.3rem] bg-white/65 dark:bg-white/[0.05] p-4">
                     <div className="flex items-center gap-3">
                       <ShieldCheck className="h-5 w-5 text-[var(--accent-gold)]" />
-                      <p className="font-medium">Credits and pack restoration instead of default cash refunds</p>
+                      <p className="font-medium">Cancel in time and it comes back as credit, not a refund chase</p>
                     </div>
                   </li>
                 </ul>
@@ -294,11 +294,11 @@ export default async function HomePage() {
               <div className="surface-card-dark rounded-[2rem] p-6">
                 <p className="section-eyebrow !text-white/55">Venue note</p>
                 <p className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-white">
-                  Designed for real court media later, but already strong without it.
+                  Real court photos are on the way.
                 </p>
                 <p className="mt-4 max-w-md text-sm leading-7 text-white/72">
-                  The layout leaves room for future sunrise footage, court-side photography, and real Dehradun venue
-                  textures without depending on them today.
+                  We&apos;re shooting sunrise sessions and league nights at the Dehradun courts. Until those land, you&apos;re
+                  looking at clean layout and live data &mdash; no stock photos standing in.
                 </p>
               </div>
             </div>
@@ -310,8 +310,8 @@ export default async function HomePage() {
         <Reveal>
           <SectionHeading
             eyebrow="Memberships, packs, and offers"
-            title="Value products should feel desirable, not tacked onto the booking flow."
-            description="Sideout treats packs, memberships, and targeted credits as part of the venue identity. That makes the customer experience richer and gives the operator meaningful retention levers."
+            title="Memberships and packs worth actually buying."
+            description="Packs, memberships, and credits are how regulars get a better rate — and how the club keeps the courts busy on the slow evenings. Priced for players who show up every week."
           />
         </Reveal>
         <div className="mt-10 grid gap-5 lg:grid-cols-[0.9fr_0.55fr_0.55fr]">
@@ -373,8 +373,8 @@ export default async function HomePage() {
         <Reveal>
           <SectionHeading
             eyebrow="Operator OS"
-            title="The admin side is where retention, spend, and schedule quality come together."
-            description="This is the wedge that makes the product portfolio-worthy. The venue gets more than booking management: it gets signals about who is slipping away, what value is expiring, and where the next offer should go."
+            title="The other half: what the front desk sees."
+            description="Staff get more than a booking list. They see who's drifting away, which credits are about to expire, and where the next offer is worth sending — the small daily calls that keep a venue full."
           />
         </Reveal>
         <div className="mt-10 grid gap-5 lg:grid-cols-[0.7fr_1.3fr]">
@@ -404,7 +404,7 @@ export default async function HomePage() {
                 <div>
                   <p className="section-eyebrow">Retention surface</p>
                   <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
-                    Customers who need a nudge, not another spreadsheet.
+                    The players worth reaching before they drift off.
                   </h3>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-[var(--accent-soft)] px-4 py-2 text-sm text-[var(--accent)]">
@@ -439,13 +439,13 @@ export default async function HomePage() {
         <section className="surface-card-dark rounded-[2.4rem] p-7 sm:p-10">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
             <div>
-              <p className="section-eyebrow !text-white/55">Ready on localhost</p>
+              <p className="section-eyebrow !text-white/55">Get on a court</p>
               <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
-                One product. Three surfaces. Enough fidelity to review like a real flagship build.
+                Pick a court, hold it, and we&apos;ll see you on the day.
               </h2>
               <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">
-                The marketing, customer, and operator experiences all share one brand system and one domain model, so
-                the work reads like a product from the first page down to the last retention table.
+                Open the app to book your next slot. Or step into the operator console and watch how the venue runs a
+                busy evening &mdash; the same screens our staff use at the desk.
               </p>
             </div>
             <div className="flex flex-wrap gap-4">

@@ -14,7 +14,7 @@ const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for 
 
 const initialNotice: NoticeState = {
   tone: "info",
-  message: "The offer route now acts like a real commercial control layer for the venue, with campaign context, pack shelves, and member plans in one place.",
+  message: "The commercial side in one place: live offers, how the packs are selling, and the member plans.",
 };
 
 export function AdminOffersPage() {
@@ -51,11 +51,11 @@ export function AdminOffersPage() {
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
             <p className="section-eyebrow !text-white/55">Offer control</p>
             <h1 className="mt-4 text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
-              Campaign logic that respects the venue instead of cheapening it.
+              Offers that pull people in, not down.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">
-              This route is where Sideout starts reading like real operator software: live campaigns, pack economics,
-              membership framing, and recovery actions that push repeat behavior in the right direction.
+              Live offers, how the packs are selling, the member plans, and quick recovery nudges &mdash; the commercial
+              calls the front desk makes between games.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <article className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
@@ -168,8 +168,8 @@ export function AdminOffersPage() {
           <div className="surface-card-strong rounded-[2rem] p-6">
             <SectionHeading
               eyebrow="Campaign board"
-              title="Promotions with audience and timing attached."
-              description="Operators should understand why each offer exists in the schedule, not just whether a discount is live."
+              title="Every offer with its who and when."
+              description="Know why each offer is running, not just that a discount is on."
             />
             <div className="mt-8 grid gap-4">
               {catalog.offers.map((offer) => (

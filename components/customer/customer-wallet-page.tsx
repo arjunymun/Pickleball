@@ -11,7 +11,7 @@ import { getNoticeClasses, type NoticeState } from "@/lib/preview-ui";
 
 const initialNotice: NoticeState = {
   tone: "info",
-  message: "This wallet surface is built around stored value, not just payment receipts. That is the real business model behind repeat play.",
+  message: "Your wallet holds credit you can put straight toward courts — from packs, refunds you never had to chase, and the odd recovery offer.",
 };
 
 export function CustomerWalletPage() {

@@ -21,7 +21,7 @@ import { formatModeLabel, getAvailabilityClasses, getNoticeClasses, type NoticeS
 const initialNotice: NoticeState = {
   tone: "info",
   message:
-    "Sideout creates a temporary hold first. Checkout and webhook confirmation are handled server-side so the court is not double-booked.",
+    "We hold the court for you first, then take payment — so two people can never grab the same slot at once.",
 };
 
 function getDateKey(value: string) {
@@ -148,8 +148,8 @@ export function CustomerBookingsPage() {
               Book a court with a real hold.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--ink-soft)]">
-              Pick a {inventoryMonthLabel} slot, reserve it for checkout, and keep the operator schedule in sync. The frontend only calls
-              booking APIs; conflict checks and payment state live on the server.
+              Pick a {inventoryMonthLabel} slot and hold it while you check out. The same hold shows up on the front
+              desk&apos;s screen, so nobody double-books the court.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <article className="rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
@@ -180,11 +180,11 @@ export function CustomerBookingsPage() {
               <article className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center gap-3">
                   <CalendarCheck2 className="h-5 w-5 text-white/80" />
-                  <p className="font-medium text-white">Temporary holds protect inventory</p>
+                  <p className="font-medium text-white">A hold keeps the court yours</p>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-white/70">
-                  A booking starts as a hold, then becomes confirmed only after the server-side payment or review path
-                  completes.
+                  Your booking starts as a hold and only turns into a confirmed court once you&apos;ve paid or staff have
+                  waved it through.
                 </p>
               </article>
               <article className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
@@ -242,7 +242,7 @@ export function CustomerBookingsPage() {
             <SectionHeading
               eyebrow="Filters"
               title="Choose date, court, and payment path."
-              description={`The board narrows ${inventoryMonthLabel} inventory without hiding the booking rules behind the UI.`}
+              description={`Filter the ${inventoryMonthLabel} board by date or court. The booking rules stay on the card, not buried in a menu.`}
             />
             <div className="mt-7 grid gap-5">
               <div>
@@ -359,7 +359,7 @@ export function CustomerBookingsPage() {
                   </div>
                 ) : (
                   <p className="mt-4 text-sm leading-7 text-[var(--ink-soft)]">
-                    No slots match this filter yet. Change the date or court, or sign in to load live inventory.
+                    No slots match this filter yet. Try another date or court, or sign in to load the live schedule.
                   </p>
                 )}
               </div>
@@ -371,8 +371,8 @@ export function CustomerBookingsPage() {
           <div className="surface-card-dark rounded-[2rem] p-6">
             <SectionHeading
               eyebrow="Availability"
-              title={`${inventoryMonthLabel} court inventory.`}
-              description="Tap a slot to inspect it, then create a hold from the summary or directly from the slot card."
+              title={`${inventoryMonthLabel} court schedule.`}
+              description="Tap a slot to see the details, then hold it from the summary or straight from the card."
               invert
             />
             <div className="mt-8 grid gap-3 lg:grid-cols-2">
@@ -523,15 +523,15 @@ export function CustomerBookingsPage() {
 
           <div className="surface-card-strong rounded-[2rem] p-6">
             <SectionHeading
-              eyebrow="Checkout rules"
+              eyebrow="How booking works"
               title="What happens after you press book."
-              description="Sideout keeps the customer flow honest: holds are visible, payments are server-confirmed, and failed checkout releases inventory."
+              description="We hold the court for you, you pay, and it's confirmed. If you don't finish checkout, the slot goes straight back up for someone else."
             />
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               {[
-                ["1", "Hold", "The selected court/time is reserved temporarily."],
-                ["2", "Checkout", "Stripe opens only for a booking that belongs to you."],
-                ["3", "Confirm", "Webhook success marks the booking paid and confirmed."],
+                ["1", "Hold", "Your court and time are locked while you check out."],
+                ["2", "Pay", "Card payment opens only for your own booking."],
+                ["3", "Confirmed", "Once the payment clears, the court is yours."],
               ].map(([step, title, body]) => (
                 <article key={step} className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-4">
                   <p className="grid h-9 w-9 place-items-center rounded-full bg-[var(--ink-strong)] text-sm font-semibold text-white">

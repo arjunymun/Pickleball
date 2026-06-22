@@ -230,7 +230,7 @@ const demoVenueSettings: VenueSettings = {
   publicContactEmail: "play@sideout.club",
   publicWhatsappNumber: "+91 98765 43110",
   memberDiscountPercent: 10,
-  featuredAnnouncement: "Sunrise inventory is the cleanest place to win back off-rhythm regulars.",
+  featuredAnnouncement: "Sunrise slots are the easiest way to win back regulars who've gone quiet.",
 };
 
 const demoOperatorActivity: OperatorActivityLog[] = [

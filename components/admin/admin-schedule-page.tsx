@@ -14,7 +14,7 @@ const READ_ONLY_TOOLTIP = "Disabled in read-only demo. Visit /demo/operator for 
 
 const initialNotice: NoticeState = {
   tone: "info",
-  message: "This schedule route is the day-of-operations surface for Sideout. Queue actions, approvals, and inventory states all live here now.",
+  message: "The day-of board: the holds queue, approvals, and where every court stands right now.",
 };
 
 export function AdminSchedulePage() {
@@ -57,11 +57,11 @@ export function AdminSchedulePage() {
           <div className="surface-card-dark rounded-[2rem] p-6 sm:p-8">
             <p className="section-eyebrow !text-white/55">Schedule control</p>
             <h1 className="mt-4 text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
-              Inventory, approvals, and court status on one dedicated board.
+              The whole day&apos;s courts on one board.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">
-              This is the operator view that matters during the day. It turns Sideout into a venue control room instead
-              of a static analytics page.
+              This is the screen staff keep open during the day &mdash; live courts and holds you can act on, not a
+              static chart you check once and close.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <article className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
