@@ -4,8 +4,20 @@ create type admin_role_kind as enum ('owner', 'staff');
 create type confirmation_mode as enum ('instant', 'review');
 create type slot_payment_mode as enum ('online', 'pay_at_venue', 'hybrid');
 create type availability_state as enum ('open', 'limited', 'booked');
-create type booking_status as enum ('requested', 'confirmed', 'checked_in', 'canceled', 'completed', 'no_show', 'credited');
-create type booking_payment_status as enum ('pending', 'paid_online', 'pay_at_venue', 'credit_applied');
+-- Mirrors BookingStatus in lib/domain.ts. The lifecycle values (held, payment_pending,
+-- payment_failed, expired, refunded) are written by the live booking + Stripe flows: the
+-- checkout route sets payment_pending, confirm_booking_from_stripe sets confirmed, and the
+-- webhook expire handler sets payment_failed. Keeping the enum in sync with the domain type
+-- is what lets those writes succeed instead of failing as invalid-enum-value at runtime.
+create type booking_status as enum (
+  'held', 'payment_pending', 'payment_failed', 'expired', 'refunded',
+  'requested', 'confirmed', 'checked_in', 'canceled', 'completed', 'no_show', 'credited'
+);
+-- Mirrors BookingPaymentStatus in lib/domain.ts. 'paid'/'failed'/'refunded' match the
+-- payments.status check constraint; the Stripe confirm/expire paths write these values.
+create type booking_payment_status as enum (
+  'pending', 'paid', 'failed', 'refunded', 'paid_online', 'pay_at_venue', 'credit_applied'
+);
 create type offer_status as enum ('active', 'scheduled', 'expired');
 create type wallet_entry_kind as enum (
   'credit_added',
