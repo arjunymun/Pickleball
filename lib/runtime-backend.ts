@@ -429,7 +429,9 @@ function mapCommunicationDeliveryRow(row: Record<string, unknown>): Communicatio
     provider: typeof row.provider === "string" ? row.provider : "mock",
     providerMessageId: typeof row.provider_message_id === "string" ? row.provider_message_id : null,
     body: String(row.body),
-    sentAt: String(row.sent_at),
+    // A queued (not-yet-sent) delivery has sent_at = null; String(null) yields the literal
+    // "null", which breaks any downstream date parsing. Fall back to an empty string instead.
+    sentAt: typeof row.sent_at === "string" ? row.sent_at : "",
   };
 }
 
@@ -481,8 +483,11 @@ function buildCustomerExperienceFromRemote(params: {
   const upcomingBookings = activeBookings
     .map((booking) => ({
       booking,
-      slot: slots.find((slot) => slot.id === booking.slotId)!,
+      slot: slots.find((slot) => slot.id === booking.slotId),
     }))
+    // Drop bookings whose slot no longer exists (e.g. a deleted slot) instead of letting the
+    // non-null assertion through to a "Cannot read startsAt of undefined" crash in the sort.
+    .filter((entry): entry is { booking: Booking; slot: BookableSlot } => Boolean(entry.slot))
     .sort(
       (first, second) =>
         new Date(first.slot.startsAt).getTime() - new Date(second.slot.startsAt).getTime(),
