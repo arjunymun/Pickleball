@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { bookSlotSchema, readJsonBody } from "@/lib/validation";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
@@ -14,10 +15,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Supabase server client unavailable." }, { status: 503 });
   }
 
-  const body = (await request.json()) as { slotId?: string };
-  if (!body.slotId) {
-    return NextResponse.json({ error: "slotId is required." }, { status: 400 });
+  const parsed = await readJsonBody(request, bookSlotSchema);
+  if (parsed.error) {
+    return parsed.error;
   }
+  const body = parsed.data;
 
   const { data, error } = await supabase.rpc("book_slot_for_current_user", {
     slot_uuid: body.slotId,
