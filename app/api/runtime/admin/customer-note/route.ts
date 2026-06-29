@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { customerNoteSchema, readJsonBody } from "@/lib/validation";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
@@ -14,14 +15,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Supabase server client unavailable." }, { status: 503 });
   }
 
-  const body = (await request.json()) as {
-    customerId?: string;
-    body?: string;
-  };
-
-  if (!body.customerId || !body.body) {
-    return NextResponse.json({ error: "customerId and body are required." }, { status: 400 });
+  const parsed = await readJsonBody(request, customerNoteSchema);
+  if (parsed.error) {
+    return parsed.error;
   }
+  const body = parsed.data;
 
   const { data, error } = await supabase.rpc("add_customer_note_as_admin", {
     customer_uuid: body.customerId,

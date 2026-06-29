@@ -4,6 +4,7 @@ import { getTwilioWhatsappEnv, sendWhatsappMessage } from "@/lib/communications/
 import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { readJsonBody, sendMessageSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
@@ -15,15 +16,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Supabase server client unavailable." }, { status: 503 });
   }
 
-  const body = (await request.json()) as {
-    customerId?: string;
-    templateId?: string;
-    body?: string;
-  };
-
-  if (!body.customerId || !body.templateId || !body.body) {
-    return NextResponse.json({ error: "customerId, templateId, and body are required." }, { status: 400 });
+  const parsed = await readJsonBody(request, sendMessageSchema);
+  if (parsed.error) {
+    return parsed.error;
   }
+  const body = parsed.data;
 
   const { data: customerProfile } = await supabase
     .from("customer_profiles")

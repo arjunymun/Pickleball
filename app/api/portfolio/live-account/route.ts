@@ -4,12 +4,11 @@ import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { bootstrapLiveVenueForAuthUser } from "@/lib/supabase/bootstrap-live";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
+import { portfolioAccountSchema, readJsonBody } from "@/lib/validation";
 
 const CUSTOMER_EMAIL = "portfolio.player@sideout.club";
 const OPERATOR_EMAIL = "portfolio.operator@sideout.club";
 const PORTFOLIO_PASSWORD = "Sideout-May-2026!";
-
-type PortfolioRole = "customer" | "operator";
 
 function isPortfolioLoginEnabled() {
   return process.env.NODE_ENV !== "production" || process.env.ENABLE_PORTFOLIO_ACCOUNTS === "true";
@@ -210,8 +209,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as { role?: PortfolioRole };
-    const role = body.role === "operator" ? "operator" : "customer";
+    const parsed = await readJsonBody(request, portfolioAccountSchema);
+    if (parsed.error) {
+      return parsed.error;
+    }
+    const role = parsed.data.role === "operator" ? "operator" : "customer";
 
     if (role === "operator") {
       await ensurePortfolioOperator();
