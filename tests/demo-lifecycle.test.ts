@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { bookableSlots } from "../lib/mock-data";
+import { bookableSlots, offers } from "../lib/mock-data";
 import {
+  approveBooking,
   bookSlot,
   cancelBooking,
   confirmBookingCheckout,
   createSeedDemoState,
+  getAdminDashboard,
   getBlockingBookingForSlot,
+  getUpcomingBookingsForCustomer,
   getWalletBalance,
 } from "../lib/demo-state";
 import type { DemoState } from "../lib/demo-state";
@@ -129,5 +132,57 @@ describe("demo booking lifecycle", () => {
     expect(canceled.canceledAt).not.toBeNull();
     // The slot value is returned to the wallet as refund credit.
     expect(getWalletBalance(nextState, FUNDED_CUSTOMER)).toBe(balanceAfterBooking + slot!.priceInr);
+  });
+
+  it("releases the offer redemption when an offer booking is canceled", () => {
+    const seed = createSeedDemoState();
+    const slot = firstOpenSlot(seed, (s) => s.confirmationMode === "instant" && s.paymentMode === "online");
+    expect(slot).toBeDefined();
+    const offer = offers.find(
+      (o) => o.status === "active" && seed.offerRedemptions.filter((r) => r.offerId === o.id).length < o.redemptionCap,
+    );
+    expect(offer, "seed should expose a redeemable active offer").toBeDefined();
+
+    const state = withWalletCredit(seed, FUNDED_CUSTOMER, 100_000);
+    const baseline = state.offerRedemptions.filter((r) => r.offerId === offer!.id).length;
+
+    const booked = bookSlot(state, slot!.id, FUNDED_CUSTOMER, { offerId: offer!.id }).nextState;
+    const created = booked.bookings.at(-1)!;
+    expect(booked.offerRedemptions.filter((r) => r.offerId === offer!.id).length).toBe(baseline + 1);
+
+    const { nextState } = cancelBooking(booked, created.id, "Customer");
+    // Canceling releases the redemption so it no longer counts against the offer cap.
+    expect(nextState.offerRedemptions.filter((r) => r.offerId === offer!.id).length).toBe(baseline);
+  });
+
+  it("does not crash on bookings that reference a missing slot (corrupted demo state)", () => {
+    const state = createSeedDemoState();
+    const orphan = {
+      ...state.bookings[0],
+      id: "booking-orphan",
+      slotId: "slot-does-not-exist",
+      status: "requested" as const,
+    };
+    const corrupted = { ...state, bookings: [...state.bookings, orphan] };
+
+    // Read/sort paths skip the orphan instead of throwing on undefined.slot.
+    expect(() => getAdminDashboard(corrupted)).not.toThrow();
+    expect(() => getUpcomingBookingsForCustomer(corrupted, orphan.customerId)).not.toThrow();
+    // approveBooking surfaces a clear error rather than a TypeError on slot.label.
+    expect(() => approveBooking(corrupted, "booking-orphan")).toThrow(/no longer exists/i);
+  });
+
+  it("treats a checked-in booking as blocking its slot", () => {
+    const state = createSeedDemoState();
+    const slot = firstOpenSlot(state, () => true);
+    expect(slot).toBeDefined();
+    const withCheckedIn = {
+      ...state,
+      bookings: [
+        ...state.bookings,
+        { ...state.bookings[0], id: "booking-checkedin", slotId: slot!.id, status: "checked_in" as const },
+      ],
+    };
+    expect(getBlockingBookingForSlot(withCheckedIn, slot!.id)?.id).toBe("booking-checkedin");
   });
 });

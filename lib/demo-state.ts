@@ -132,7 +132,8 @@ function getOfferDiscountInr(offer: Offer, slot: BookableSlot, memberDiscountPer
 export function getBlockingBookingForSlot(state: DemoState, slotId: string) {
   return state.bookings.find(
     (booking) =>
-      booking.slotId === slotId && ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
+      booking.slotId === slotId &&
+      ["held", "payment_pending", "requested", "confirmed", "checked_in"].includes(booking.status),
   );
 }
 
@@ -140,7 +141,9 @@ export function getUpcomingBookingsForCustomer(state: DemoState, customerId: str
   return state.bookings
     .filter(
       (booking) =>
-        booking.customerId === customerId && ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
+        booking.customerId === customerId &&
+        ["held", "payment_pending", "requested", "confirmed", "checked_in"].includes(booking.status) &&
+        Boolean(getSlotById(booking.slotId)),
     )
     .map((booking) => ({
       booking,
@@ -348,7 +351,7 @@ export function getAdminDashboard(state: DemoState) {
   }).length;
 
   const requestQueue = state.bookings
-    .filter((booking) => booking.status === "requested")
+    .filter((booking) => booking.status === "requested" && Boolean(getSlotById(booking.slotId)))
     .map((booking) => ({
       booking,
       slot: getSlotById(booking.slotId)!,
@@ -360,7 +363,7 @@ export function getAdminDashboard(state: DemoState) {
     );
 
   const upcomingConfirmed = state.bookings
-    .filter((booking) => booking.status === "confirmed")
+    .filter((booking) => booking.status === "confirmed" && Boolean(getSlotById(booking.slotId)))
     .map((booking) => ({
       booking,
       slot: getSlotById(booking.slotId)!,
@@ -629,6 +632,7 @@ export function bookSlot(
             customerId,
             redeemedAt: new Date().toISOString(),
             creditValueInr: discountInr,
+            bookingId: createdBooking.id,
           },
         ]
       : state.offerRedemptions;
@@ -700,6 +704,9 @@ export function cancelBooking(
       ...state,
       bookings: nextBookings,
       walletLedgerEntries: nextWalletEntries,
+      // Release the offer redemption this booking consumed so a canceled booking no longer
+      // counts against the offer's redemption cap (ghost redemptions would block new uses).
+      offerRedemptions: state.offerRedemptions.filter((entry) => entry.bookingId !== bookingId),
       operatorActivity: pushOperatorActivity(
         state,
         actorLabel === "Customer" ? "booking_canceled" : "operator_canceled_booking",
@@ -761,7 +768,10 @@ export function approveBooking(state: DemoState, bookingId: string): DemoMutatio
     throw new Error("Only requested bookings can be approved.");
   }
 
-  const slot = getSlotById(booking.slotId)!;
+  const slot = getSlotById(booking.slotId);
+  if (!slot) {
+    throw new Error("Booking references a slot that no longer exists.");
+  }
 
   const nextBookings = state.bookings.map((entry) =>
         entry.id === bookingId

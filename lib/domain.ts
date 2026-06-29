@@ -283,6 +283,9 @@ export interface OfferRedemption {
   customerId: string;
   redeemedAt: string;
   creditValueInr: number;
+  // Links a redemption to the booking that consumed it, so canceling that booking can
+  // release the redemption against the offer's cap. Optional: seed/legacy rows omit it.
+  bookingId?: string | null;
 }
 
 export interface AttendanceEvent {
