@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bookableSlots } from "../lib/mock-data";
+import { bookableSlots, offers } from "../lib/mock-data";
 import {
   bookSlot,
   cancelBooking,
@@ -129,5 +129,32 @@ describe("demo booking lifecycle", () => {
     expect(canceled.canceledAt).not.toBeNull();
     // The slot value is returned to the wallet as refund credit.
     expect(getWalletBalance(nextState, FUNDED_CUSTOMER)).toBe(balanceAfterBooking + slot!.priceInr);
+  });
+
+  it("refunds only the discounted amount paid when a booking-from-offer is canceled", () => {
+    const seed = createSeedDemoState();
+    const slot = firstOpenSlot(seed, (s) => s.confirmationMode === "instant" && s.paymentMode === "online");
+    expect(slot).toBeDefined();
+
+    // A redeemable active offer makes the wallet charge less than the full slot price.
+    const offer = offers.find(
+      (o) => o.status === "active" && seed.offerRedemptions.filter((r) => r.offerId === o.id).length < o.redemptionCap,
+    );
+    expect(offer, "seed should expose a redeemable active offer").toBeDefined();
+
+    const state = withWalletCredit(seed, FUNDED_CUSTOMER, 100_000);
+    const booked = bookSlot(state, slot!.id, FUNDED_CUSTOMER, { offerId: offer!.id }).nextState;
+    const created = booked.bookings.at(-1)!;
+
+    expect(created.paymentStatus).toBe("credit_applied");
+    // The discount actually reduced the charge below full price (otherwise this test proves nothing).
+    expect(created.totalAmountInr).toBeLessThan(slot!.priceInr);
+
+    const balanceAfterBooking = getWalletBalance(booked, FUNDED_CUSTOMER);
+    const { nextState } = cancelBooking(booked, created.id, "Customer");
+
+    // Refund the discounted amount paid, NOT the full slot price (the money-leak regression).
+    expect(getWalletBalance(nextState, FUNDED_CUSTOMER)).toBe(balanceAfterBooking + created.totalAmountInr!);
+    expect(getWalletBalance(nextState, FUNDED_CUSTOMER)).not.toBe(balanceAfterBooking + slot!.priceInr);
   });
 });

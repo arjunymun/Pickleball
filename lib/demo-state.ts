@@ -688,7 +688,10 @@ export function cancelBooking(
           id: createId("wallet"),
           customerId: booking.customerId,
           createdAt: new Date().toISOString(),
-          amountInr: getBookingValueInr(booking),
+          // Refund what the customer actually paid. bookSlot stores the post-discount charge
+          // in totalAmountInr; getBookingValueInr only knows the seed's booking_payments and
+          // otherwise falls back to the full slot price, which over-refunds a discounted booking.
+          amountInr: booking.totalAmountInr ?? getBookingValueInr(booking),
           kind: "refund_credit" as const,
           note: `${actorLabel} cancellation credit for ${slot.label}`,
         },
