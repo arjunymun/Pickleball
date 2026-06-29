@@ -475,7 +475,7 @@ function buildCustomerExperienceFromRemote(params: {
   } = params;
 
   const activeBookings = bookings.filter((booking) =>
-    ["held", "payment_pending", "requested", "confirmed"].includes(booking.status),
+    ["held", "payment_pending", "requested", "confirmed", "checked_in"].includes(booking.status),
   );
   const ownActiveBookingsBySlot = new Map(activeBookings.map((booking) => [booking.slotId, booking]));
   const walletBalance = getWalletBalance(walletEntries, customerProfile.id);
@@ -1052,7 +1052,11 @@ export async function getSupabaseRuntimeSnapshot(): Promise<RuntimeSnapshot> {
       communicationDeliveriesResult,
     ] = await Promise.all([
       supabase.from("customer_profiles").select("*").eq("venue_id", activeVenueId),
-      supabase.from("users").select("*"),
+      // The users RLS restricts SELECT to the requester's own row, so the user-scoped client
+      // would return only the admin and empty every customer list. Use the admin client (this
+      // block is already gated on the requester being a venue admin); fall back to the scoped
+      // client when the service role is unconfigured.
+      (createSupabaseAdminClient() ?? supabase).from("users").select("*"),
       supabase.from("bookings").select("*"),
       supabase.from("customer_packs").select("*"),
       supabase.from("customer_memberships").select("*"),
