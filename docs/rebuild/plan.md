@@ -22,6 +22,8 @@ Superseding owner constraint: only ONE gpt-6.1-sol instance may run, the lead. H
 
 Owner update October 4: put Razorpay dashboard setup, test credentials, plans, webhooks, and all payment-provider changes on hold. Continue the independent customer, staff, Supabase/Auth, documentation, and deployment-readiness work that does not require Razorpay. Keep payment mode unconfigured and both backend switches off until the remaining owner inputs and staging checks are complete.
 
+Owner decisions October 4: Google Cloud country is India; grant owner access to the owner's account only (no additional staff yet); use “Doon Pickleball Academy” as the email sender display name. The owner does not own a domain and authorizes no domain or service charges. Investigate a free host-provided subdomain for staging. Netlify Free is a candidate because it supports this Next.js stack and advertises commercial projects, but confirm current account limits and zero-charge behavior before deployment. A provider subdomain is not a custom domain and cannot authenticate the sender domain for branded transactional mail. Brevo Free therefore remains blocked until the business owns a sending domain. ChatGPT Sites may publish separate lightweight sites but is not a drop-in host for this existing Next.js/Supabase repository. Keep production-like customer email unavailable until a real sender domain and SMTP are verified.
+
 ## Frozen API contract
 
 All types are defined in `lib/academy/contracts.ts`. GET responses and POST success responses below are JSON. Errors have `{ error: string, code?: string }` and appropriate 400/401/403/409/503 status; no raw database errors or secrets.
