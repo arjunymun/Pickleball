@@ -43,7 +43,7 @@ All types are defined in `lib/academy/contracts.ts`. GET responses and POST succ
 - POST /api/admin/blocks { courtId, startsAt, endsAt, reason, idempotencyKey } -> { block }; DELETE /api/admin/blocks/:id -> { ok:true }.
 - GET /api/admin/customers -> AdminCustomersPayload; POST /api/admin/customers/:id/notes { body } -> { ok:true }.
 - POST /api/admin/attendance { customerId, date, idempotencyKey } -> { attendance }; staff confirms one daily member visit, unique(member, IST-date), active paid membership required. Individual-play sessions separately reserve court inventory in schedule.
-- Scheduled hold expiration/reconciliation endpoint authenticated by CRON_SECRET; read/hold paths also perform expiry repair.
+- Supabase pg_cron expires holds every five minutes; read/hold paths also perform expiry repair. The separate scheduled payment/refund/webhook reconciliation endpoint is authenticated by CRON_SECRET and still needs a compatible hosted runtime.
 
 Legacy payment/runtime/bootstrap/portfolio privileged mutations must be disabled explicitly, not left reachable. Recruiter sandbox must not obtain production snapshots or credentials. Never silently use demo data in business UI. Development fixtures live only in tests/sandbox.
 
