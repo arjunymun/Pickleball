@@ -1,124 +1,167 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Clock3, TriangleAlert } from "lucide-react";
-
-// Status the confirmation page resolves to after polling the server record.
-type ConfirmationState = "pending" | "confirmed" | "timeout";
-
-// Minimal shape of the relevant part of GET /api/bookings/me. Kept local so the page
-// does not couple to the full runtime snapshot type.
-interface BookingsMeResponse {
-  upcoming?: Array<{ booking?: { id?: string; status?: string } }>;
-  history?: Array<{ id?: string; status?: string }>;
-}
-
-const CONFIRMED_STATUSES = new Set(["confirmed", "checked_in", "completed"]);
-const POLL_INTERVAL_MS = 2500;
-const POLL_TIMEOUT_MS = 30000;
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Clock3 } from "lucide-react";
+import type { CustomerAccountPayload } from "@/lib/academy/contracts";
+import { formatMoney, ACADEMY } from "@/lib/academy/config";
+import { formatCourtDate, formatCourtTime } from "@/lib/academy/time";
+import { useCustomerData } from "@/components/customer/customer-data";
+import styles from "@/components/customer/academy-customer.module.css";
 
 export function BookingStatus({ bookingId }: { bookingId: string | null }) {
-  const [state, setState] = useState<ConfirmationState>(bookingId ? "pending" : "timeout");
-  const startedAtRef = useRef<number | null>(null);
-
+  const { data, error, loading, refresh } =
+    useCustomerData<CustomerAccountPayload>("/api/bookings/me");
+  const [checksEnded, setChecksEnded] = useState(false);
+  const booking = data?.bookings.find((item) => item.id === bookingId);
+  const waiting =
+    booking?.status === "held" && booking.paymentStatus === "pending";
   useEffect(() => {
-    if (!bookingId) {
-      return;
-    }
-
-    let isActive = true;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    // Set the polling window start inside the effect so render stays pure.
-    startedAtRef.current = Date.now();
-
-    async function poll() {
-      if (!isActive) {
-        return;
+    if (!waiting) return;
+    let count = 0;
+    const interval = setInterval(() => {
+      count++;
+      refresh();
+      if (count >= 12) {
+        clearInterval(interval);
+        setChecksEnded(true);
       }
-
-      try {
-        const response = await fetch("/api/bookings/me", { cache: "no-store" });
-        if (response.ok) {
-          const payload = (await response.json()) as BookingsMeResponse;
-          const match =
-            payload.upcoming?.find((entry) => entry.booking?.id === bookingId)?.booking ??
-            payload.history?.find((entry) => entry.id === bookingId);
-
-          if (match?.status && CONFIRMED_STATUSES.has(match.status)) {
-            if (isActive) {
-              setState("confirmed");
-            }
-            return;
-          }
-        }
-      } catch {
-        // Network hiccup — keep polling until the timeout window closes.
-      }
-
-      if (!isActive) {
-        return;
-      }
-
-      if (Date.now() - (startedAtRef.current ?? Date.now()) >= POLL_TIMEOUT_MS) {
-        setState("timeout");
-        return;
-      }
-
-      timer = setTimeout(poll, POLL_INTERVAL_MS);
-    }
-
-    void poll();
-
-    return () => {
-      isActive = false;
-      if (timer) {
-        clearTimeout(timer);
-      }
-    };
-  }, [bookingId]);
-
-  if (state === "confirmed") {
+    }, 5_000);
+    return () => clearInterval(interval);
+  }, [waiting, refresh]);
+  if (!bookingId)
     return (
-      <div className="flex items-start gap-3 rounded-[1.4rem] border border-[var(--line-soft)] bg-[rgba(31,106,84,0.08)] p-5">
-        <CheckCircle2 className="mt-0.5 h-5 w-5 text-[var(--accent-green)]" />
-        <div>
-          <p className="font-medium text-[var(--ink-strong)]">Booking confirmed</p>
-          <p className="mt-1 text-sm leading-7 text-[var(--ink-soft)]">
-            Stripe confirmed the payment and the webhook marked your court as booked.
-          </p>
+      <div className={styles.page}>
+        <h1 className={`academy-heading ${styles.pageHeading}`}>
+          Find your booking.
+        </h1>
+        <Link href="/app/bookings" className="academy-button">
+          Your bookings
+        </Link>
+      </div>
+    );
+  if (loading && !data)
+    return (
+      <div className={styles.page}>
+        <div role="status" className={styles.loading}>
+          Checking your booking…
         </div>
       </div>
     );
-  }
-
-  if (state === "timeout") {
+  if (error || !booking)
     return (
-      <div className="flex items-start gap-3 rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-5">
-        <TriangleAlert className="mt-0.5 h-5 w-5 text-[var(--accent)]" />
-        <div>
-          <p className="font-medium text-[var(--ink-strong)]">Still syncing</p>
-          <p className="mt-1 text-sm leading-7 text-[var(--ink-soft)]">
-            This is taking longer than usual. Please{" "}
-            <a href="/app/bookings" className="font-semibold text-[var(--accent-deep)] underline">
-              check your bookings
-            </a>{" "}
-            in a moment — the webhook may still be processing.
-          </p>
+      <div className={styles.page}>
+        <div className={styles.empty}>
+          <h1 className="academy-heading">
+            We couldn&apos;t find your booking.
+          </h1>
+          <p>{error ?? "This booking is not available in your account."}</p>
+          <div className={styles.actionRow}>
+            <button className="academy-button-secondary" onClick={refresh}>
+              Check again
+            </button>
+            <Link
+              className="academy-button-secondary"
+              href={`/sign-in?next=${encodeURIComponent(`/app/bookings/confirmation?booking=${bookingId}`)}`}
+            >
+              Sign in
+            </Link>
+            <Link href="/app/bookings" className="academy-button">
+              Your bookings
+            </Link>
+          </div>
         </div>
       </div>
     );
-  }
-
+  const confirmed = ["confirmed", "checked_in", "completed"].includes(
+    booking.status,
+  );
   return (
-    <div className="flex items-start gap-3 rounded-[1.4rem] border border-[var(--line-soft)] bg-white/70 p-5">
-      <Clock3 className="mt-0.5 h-5 w-5 animate-pulse text-[var(--accent)]" />
-      <div>
-        <p className="font-medium text-[var(--ink-strong)]">Confirming your booking…</p>
-        <p className="mt-1 text-sm leading-7 text-[var(--ink-soft)]">
-          Waiting for the verified Stripe webhook to mark this booking as paid. This page updates
-          automatically.
+    <div className={styles.page}>
+      <section className={styles.confirmation}>
+        {confirmed ? (
+          <CheckCircle2 size={42} className={styles.confirmationIcon} />
+        ) : (
+          <Clock3 size={42} className={styles.confirmationIcon} />
+        )}
+        <h1 className="academy-heading">
+          {confirmed
+            ? "See you on court."
+            : waiting
+              ? "Checking your payment."
+              : `Booking ${booking.status.replaceAll("_", " ")}.`}
+        </h1>
+        <p className={styles.intro}>
+          {confirmed
+            ? "Your reservation is confirmed. Keep this booking reference handy when you arrive."
+            : waiting
+              ? "Your booking will be confirmed after payment is verified. Check its status before making another payment."
+              : "The latest status of your reservation is shown below."}
         </p>
-      </div>
+        {data?.paymentMode === "test" && booking.source === "online" && (
+          <p className={styles.notice}>
+            Test payment booking. No real charge was collected.
+          </p>
+        )}
+        <div className={styles.review}>
+          <dl className={styles.statusDetails}>
+            <div>
+              <dt>Court</dt>
+              <dd>{booking.courtName}</dd>
+            </div>
+            <div>
+              <dt>Date</dt>
+              <dd>{formatCourtDate(booking.startsAt, { weekday: "long" })}</dd>
+            </div>
+            <div>
+              <dt>Time</dt>
+              <dd>
+                {formatCourtTime(booking.startsAt)} –{" "}
+                {formatCourtTime(booking.endsAt)} IST
+              </dd>
+            </div>
+            <div>
+              <dt>Payment</dt>
+              <dd>
+                {formatMoney(booking.amountPaise)} ·{" "}
+                {booking.paymentStatus.replaceAll("_", " ")}
+              </dd>
+            </div>
+            <div>
+              <dt>Booking reference</dt>
+              <dd className={styles.small}>{booking.id}</dd>
+            </div>
+            {booking.refundedPaise > 0 && (
+              <div>
+                <dt>Refund</dt>
+                <dd>{formatMoney(booking.refundedPaise)}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+        {waiting && checksEnded && (
+          <p className={styles.notice}>
+            Confirmation is taking longer than expected. Refresh the status or
+            call the academy; do not pay again until this is resolved.
+          </p>
+        )}
+        <div className={styles.actionRow} style={{ marginTop: 22 }}>
+          <Link href="/app/bookings" className="academy-button">
+            Your bookings
+          </Link>
+          <button
+            className="academy-button-secondary"
+            onClick={refresh}
+            disabled={loading}
+          >
+            {loading ? "Checking…" : "Refresh status"}
+          </button>
+        </div>
+        <p className={styles.small}>
+          Need to cancel or have a payment question?{" "}
+          <a href={ACADEMY.phoneHref}>Call {ACADEMY.phone}</a>.
+        </p>
+      </section>
     </div>
   );
 }

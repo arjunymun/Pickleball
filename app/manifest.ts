@@ -2,13 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Sideout",
-    short_name: "Sideout",
-    description: "A premium Dehradun pickleball club app for bookings, packs, memberships, and repeat-play value.",
-    start_url: "/app",
+    name: "Doon Pickleball Academy",
+    short_name: "Doon Pickleball",
+    description: "Court bookings and membership at Doon Pickleball Academy, GMS Road, Dehradun.",
+    start_url: "/",
     display: "standalone",
-    background_color: "#f4efe7",
-    theme_color: "#1f6a54",
+    background_color: "#ffffff",
+    theme_color: "#075bea",
     icons: [
       {
         src: "/icon?size=192",

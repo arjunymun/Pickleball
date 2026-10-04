@@ -1,5 +1,2 @@
-import { AdminOffersPage } from "@/components/admin/admin-offers-page";
-
-export default function AdminOffersRoute() {
-  return <AdminOffersPage />;
-}
+import { redirect } from "next/navigation";
+export default function OffersPage() { redirect("/admin/customers"); }

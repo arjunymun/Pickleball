@@ -1,7 +1,8 @@
 "use client";
-
+import Link from "next/link";
 import { useEffect } from "react";
-
+import { AcademyBrand } from "@/components/academy/brand";
+import { ACADEMY } from "@/lib/academy/config";
 export default function RootError({
   error,
   reset,
@@ -10,31 +11,33 @@ export default function RootError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Surface the failure in the browser console and Vercel runtime logs; the raw message
-    // is intentionally kept out of the UI so client-side internals are not shown to visitors.
-    console.error("[sideout] root route error", error);
+    console.error("[academy] route error", { digest: error.digest });
   }, [error]);
-
   return (
-    <main className="page-frame min-h-screen px-6 pb-20 pt-8 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-5xl">
-        <div className="surface-card-dark rounded-[2rem] p-8">
-          <p className="section-eyebrow !text-white/55">Sideout hit an error</p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-white">
-            The venue surface needs another pass.
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">
-            Something went wrong while loading this route. Give it another go below — if it keeps happening,
-            refresh in a moment.
-          </p>
-          {error.digest ? (
-            <p className="mt-3 text-xs uppercase tracking-[0.18em] text-white/40">Reference: {error.digest}</p>
-          ) : null}
-          <button type="button" className="primary-button mt-8 px-4 py-2 text-sm" onClick={reset}>
-            Retry this surface
-          </button>
-        </div>
+    <main id="main-content" className="academy-container academy-empty">
+      <AcademyBrand />
+      <p className="academy-eyebrow">Unable to load this page</p>
+      <h1 className="academy-heading">Please try again.</h1>
+      <p>
+        We couldn&apos;t load this page. If you were making a payment, check My
+        Bookings before trying another payment.
+      </p>
+      <div
+        style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}
+      >
+        <button type="button" className="academy-button" onClick={reset}>
+          Try again
+        </button>
+        <Link className="academy-button-secondary" href="/app/bookings">
+          My Bookings
+        </Link>
+        <a className="academy-button-secondary" href={ACADEMY.phoneHref}>
+          Call the academy
+        </a>
       </div>
+      {error.digest && (
+        <p className="academy-muted">Reference: {error.digest}</p>
+      )}
     </main>
   );
 }

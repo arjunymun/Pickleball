@@ -4,7 +4,9 @@ export function getSiteUrl() {
 
 export function getSupabasePublicEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
     return null;
@@ -22,4 +24,11 @@ export function getSupabaseServiceRoleKey() {
 
 export function isSupabaseConfigured() {
   return Boolean(getSupabasePublicEnv());
+}
+
+export function isAcademyConfigured() {
+  return (
+    process.env.ACADEMY_BACKEND_ENABLED === "true" &&
+    Boolean(getSupabasePublicEnv() && getSupabaseServiceRoleKey())
+  );
 }

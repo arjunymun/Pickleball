@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
-
-import { getAvailabilityPayload } from "@/lib/booking/server";
-
+import { academyRoute } from "@/lib/academy/http";
+import {
+  getAcademyAvailability,
+  validateAcademyDate,
+} from "@/lib/academy/server";
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const date = url.searchParams.get("date") ?? undefined;
-
-  return NextResponse.json(await getAvailabilityPayload(date));
+  return academyRoute(() =>
+    getAcademyAvailability(
+      validateAcademyDate(new URL(request.url).searchParams.get("date")),
+    ),
+  );
 }

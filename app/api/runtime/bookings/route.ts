@@ -1,38 +1,13 @@
-import { NextResponse } from "next/server";
-
-import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { bookSlotSchema, readJsonBody } from "@/lib/validation";
-
-export async function POST(request: Request) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ error: "Supabase is not configured." }, { status: 503 });
-  }
-
-  const supabase = await createServerSupabaseClient();
-  if (!supabase) {
-    return NextResponse.json({ error: "Supabase server client unavailable." }, { status: 503 });
-  }
-
-  const parsed = await readJsonBody(request, bookSlotSchema);
-  if (parsed.error) {
-    return parsed.error;
-  }
-  const body = parsed.data;
-
-  const { data, error } = await supabase.rpc("book_slot_for_current_user", {
-    slot_uuid: body.slotId,
-  });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-
-  const snapshot = await getSupabaseRuntimeSnapshot();
-
-  return NextResponse.json({
-    message: typeof data === "string" ? data : "Booking created.",
-    snapshot,
-  });
+import { retiredRoute } from "@/lib/academy/http";
+export async function GET() {
+  return retiredRoute();
+}
+export async function POST() {
+  return retiredRoute();
+}
+export async function DELETE() {
+  return retiredRoute();
+}
+export async function PATCH() {
+  return retiredRoute();
 }

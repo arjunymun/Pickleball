@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
-import { getSupabasePublicEnv, getSupabaseServiceRoleKey } from "@/lib/supabase/env";
+import {
+  getSupabasePublicEnv,
+  getSupabaseServiceRoleKey,
+} from "@/lib/supabase/env";
+import { boundedSupabaseFetch } from "@/lib/supabase/fetch";
 
 export function createSupabaseAdminClient() {
   const env = getSupabasePublicEnv();
@@ -11,6 +15,7 @@ export function createSupabaseAdminClient() {
   }
 
   return createClient(env.url, serviceRoleKey, {
+    global: { fetch: boundedSupabaseFetch },
     auth: {
       autoRefreshToken: false,
       persistSession: false,

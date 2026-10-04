@@ -1,14 +1,13 @@
-import { NextResponse } from "next/server";
-
-import { getSupabaseRuntimeSnapshot } from "@/lib/runtime-backend";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
-
+import { retiredRoute } from "@/lib/academy/http";
 export async function GET() {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ error: "Supabase is not configured." }, { status: 503 });
-  }
-
-  const snapshot = await getSupabaseRuntimeSnapshot();
-
-  return NextResponse.json(snapshot);
+  return retiredRoute();
+}
+export async function POST() {
+  return retiredRoute();
+}
+export async function DELETE() {
+  return retiredRoute();
+}
+export async function PATCH() {
+  return retiredRoute();
 }

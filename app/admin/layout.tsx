@@ -1,78 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpRight, Compass, Shield } from "lucide-react";
+import { getAcademySession } from "@/lib/academy/server";
+import styles from "@/components/admin/operations.module.css";
+import { StaffNavigation } from "@/components/admin/staff-navigation";
+import { AcademyBrand } from "@/components/academy/brand";
 
-import { AuthStatusPill } from "@/components/auth/auth-status-pill";
-import { PreviewNav } from "@/components/ui/preview-nav";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Wordmark } from "@/components/ui/wordmark";
-import { getAuthState } from "@/lib/auth";
-
-const adminNavItems = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/schedule", label: "Schedule" },
-  { href: "/admin/customers", label: "Customers" },
-  { href: "/admin/offers", label: "Offers" },
-  { href: "/admin/settings", label: "Settings" },
-  { href: "/admin/communications", label: "Comms" },
-];
-
-export default async function AdminLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const authState = await getAuthState();
-
-  if (authState.isConfigured && authState.setupStatus !== "demo") {
-    if (!authState.user) {
-      redirect("/sign-in");
-    }
-
-    if (!authState.user.hasAdminAccess) {
-      redirect("/app");
-    }
+export default async function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  let session;
+  try { session = await getAcademySession(); }
+  catch {
+    return <main id="main-content" className={styles.access}><p className="academy-eyebrow">Staff access</p><h1>Unable to verify access.</h1><p>The academy service is unavailable. Staff tools stay locked until your account can be verified.</p><Link className="academy-button-secondary" href="/admin">Try again</Link><Link href="/">Back to the academy</Link></main>;
   }
-
-  return (
-    <main className="page-frame min-h-screen px-6 pb-20 pt-6 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-7xl">
-        <header className="surface-card-dark flex flex-col gap-5 rounded-[1.8rem] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <Wordmark muted />
-            <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/72">
-              Operator preview
-            </span>
-          </div>
-          <nav className="flex flex-wrap items-center gap-3 text-sm text-white/72">
-            <Link href="/" className="inline-flex items-center gap-2 transition hover:text-white">
-              <Compass className="h-4 w-4" />
-              Marketing
-            </Link>
-            <Link href="/app" className="inline-flex items-center gap-2 transition hover:text-white">
-              <ArrowUpRight className="h-4 w-4" />
-              Customer view
-            </Link>
-            <Link href="/demo" className="inline-flex items-center gap-2 transition hover:text-white">
-              Demo
-            </Link>
-            <ThemeToggle inverted />
-            <AuthStatusPill inverted />
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/6 px-4 py-2 text-white">
-              <Shield className="h-4 w-4" />
-              Owner + staff roles
-            </span>
-          </nav>
-        </header>
-        <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <PreviewNav items={adminNavItems} inverted />
-          <p className="max-w-2xl text-sm leading-7 text-white/65">
-            The operator shell now covers setup, schedule control, customer memory, WhatsApp workflows, and commercial
-            actions while staying role-gated in live mode for owner and staff accounts only.
-          </p>
-        </div>
-        {children}
-      </div>
-    </main>
-  );
+  if (!session.configured) return <main id="main-content" className={styles.access}><p className="academy-eyebrow">Staff access</p><h1>Staff tools need setup.</h1><p>The academy backend is not connected. An owner must complete the service setup before staff can manage bookings.</p><Link href="/">Back to the academy</Link></main>;
+  if (!session.user) redirect("/sign-in?next=%2Fadmin");
+  if (session.user.role !== "owner" && session.user.role !== "staff") return <main id="main-content" className={styles.access}><p className="academy-eyebrow">Staff access</p><h1>This account is a player account.</h1><p>Staff tools require an owner or staff account. Contact the academy owner if you work here.</p><Link className="academy-button" href="/app">Go to your account</Link></main>;
+  return <div className={styles.shell}>
+    <header className={styles.staffHeader}><div className={styles.brand}><AcademyBrand /><span className={styles.frontDesk}>Front desk</span></div><div className={styles.staffIdentity}><span>{session.user.name}<small>{session.user.role}</small></span><Link href="/app">Account</Link></div></header>
+    <StaffNavigation />
+    <main id="main-content" className={styles.main}>{session.paymentMode !== "live" && <p className={styles.environment}>{session.paymentMode === "test" ? "Payment test mode — gateway charges use test transactions." : "Online payments are not configured. Manual reservations remain clearly labelled."}</p>}{children}</main>
+  </div>;
 }

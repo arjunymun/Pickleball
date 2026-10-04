@@ -1,5 +1,2 @@
-import { OperatorDashboard } from "@/components/admin/operator-dashboard";
-
-export default function AdminPage() {
-  return <OperatorDashboard />;
-}
+import { AcademyOperations } from "@/components/admin/academy-operations";
+export default function AdminPage() { return <AcademyOperations />; }

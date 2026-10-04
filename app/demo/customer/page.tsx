@@ -1,9 +1,9 @@
-import { CustomerDashboard } from "@/components/customer/customer-dashboard";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Customer Demo",
 };
 
 export default function DemoCustomerPage() {
-  return <CustomerDashboard />;
+  redirect("/demo#sandbox-title");
 }

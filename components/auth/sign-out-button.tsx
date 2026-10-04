@@ -1,39 +1,51 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-
+import { useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import styles from "@/components/customer/academy-customer.module.css";
 
-interface SignOutButtonProps {
-  label: string;
+export function SignOutButton({
+  label = "",
+  inverted = false,
+}: {
+  label?: string;
   inverted?: boolean;
-}
-
-export function SignOutButton({ label, inverted = false }: SignOutButtonProps) {
+}) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  function handleSignOut() {
-    startTransition(async () => {
-      try {
-        const supabase = createBrowserSupabaseClient();
-        await supabase.auth.signOut();
-      } finally {
-        router.push("/sign-in");
-        router.refresh();
-      }
-    });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function signOut() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { error: authError } =
+        await createBrowserSupabaseClient().auth.signOut();
+      if (authError) throw authError;
+      router.push("/");
+      router.refresh();
+    } catch {
+      setError("Unable to sign out. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
-
   return (
-    <button
-      type="button"
-      className={inverted ? "secondary-button secondary-button-dark px-4 py-2 text-sm" : "secondary-button px-4 py-2 text-sm"}
-      onClick={handleSignOut}
-      disabled={isPending}
-    >
-      {isPending ? "Signing out..." : `Sign out ${label}`}
-    </button>
+    <span>
+      <button
+        className={styles.signout}
+        style={inverted ? { color: "white" } : undefined}
+        onClick={() => void signOut()}
+        disabled={busy}
+        aria-label={label ? `Sign out ${label}` : "Sign out"}
+      >
+        {busy ? "Signing out…" : "Sign out"}
+      </button>
+      {error && (
+        <span role="alert" className={styles.small}>
+          {error}
+        </span>
+      )}
+    </span>
   );
 }

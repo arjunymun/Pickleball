@@ -1,466 +1,207 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRight,
-  ArrowUpRight,
-  CalendarRange,
   Clock3,
-  Coins,
   MapPin,
-  ShieldCheck,
-  Sparkles,
-  Users2,
+  Sun,
+  Users,
+  LayoutGrid,
+  ArrowUpRight,
 } from "lucide-react";
-
-import { Reveal } from "@/components/ui/reveal";
-import { SectionHeading } from "@/components/ui/section-heading";
-import { SideoutCourt3D } from "@/components/ui/sideout-court-3d";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Wordmark } from "@/components/ui/wordmark";
-import { formatIndianCurrency, formatPercent, formatVenueDate, formatVenueRange } from "@/lib/formatters";
-import { getPublicSiteSnapshot } from "@/lib/runtime-backend";
+import { SiteHeader } from "@/components/academy/site-header";
+import { SiteFooter } from "@/components/academy/site-footer";
+import { ACADEMY, formatMoney } from "@/lib/academy/config";
 import {
-  adminSummary,
-  atRiskCustomers,
-  courts as mockCourts,
-  highlightedSlots as highlightedSlotsFallback,
-  membershipPlans,
-  offers as offersFallback,
-  packProducts,
-} from "@/lib/mock-data";
-import { site } from "@/lib/site";
+  bookingDates,
+  formatCourtDate,
+  formatCourtTime,
+  slotStart,
+} from "@/lib/academy/time";
+import styles from "@/components/customer/academy-customer.module.css";
 
-const productPillars = [
-  {
-    title: "Browse first, sign in later",
-    copy:
-      "Scan the week's courts, prices, and offers without making an account. We only ask who you are once you're ready to hold a slot or spend credits.",
-  },
-  {
-    title: "Booking that works like the front desk",
-    copy:
-      "Open-play courts confirm on the spot. Coached and review slots wait for a staff nod. Cancel in time and your money comes back as venue credit, not a refund you'll forget you have.",
-  },
-  {
-    title: "We notice when a regular goes quiet",
-    copy:
-      "The operator view skips the vanity charts. It shows credits about to expire, players who've stopped turning up, and who's most likely to rebook, while there's still time to do something about it.",
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const publicSite = await getPublicSiteSnapshot();
-  const venue = publicSite.venue;
-  const highlightedSlots = publicSite.featuredSlots.length > 0 ? publicSite.featuredSlots : highlightedSlotsFallback;
-  const offers = publicSite.featuredOffers.length > 0 ? publicSite.featuredOffers : offersFallback;
-
+export default function HomePage() {
+  const dates = bookingDates();
   return (
-    <main className="page-frame">
-      <section className="relative overflow-hidden px-6 pb-20 pt-6 sm:px-8 lg:px-12">
-        <div className="hero-glow left-[5%] top-20 h-56 w-56 bg-[rgba(31,106,84,0.22)]" />
-        <div className="hero-glow right-[8%] top-36 h-64 w-64 bg-[rgba(221,105,56,0.22)]" />
-        <div className="mx-auto max-w-7xl">
-          <header className="flex flex-col gap-5 border-b border-[var(--line-soft)] pb-6 sm:flex-row sm:items-center sm:justify-between">
-            <Wordmark />
-            <nav className="flex flex-wrap items-center gap-4 text-sm text-[var(--ink-soft)]">
-              {site.nav.map((item) => (
-                <Link key={item.href} href={item.href} className="transition hover:text-[var(--ink-strong)]">
-                  {item.label}
-                </Link>
+    <>
+      <SiteHeader />
+      <main id="main-content" className="academy-container">
+        <section className={styles.hero} aria-labelledby="home-heading">
+          <div className={styles.heroCopy}>
+            <p className="academy-eyebrow">GMS Road, Dehradun</p>
+            <h1
+              id="home-heading"
+              className={`academy-heading ${styles.heroHeading}`}
+            >
+              Your next
+              <br /> game starts
+              <br /> here<span className={styles.dot}>.</span>
+            </h1>
+            <p className={styles.heroDescription}>
+              Four outdoor courts. Good games, every day.
+            </p>
+          </div>
+          <div className={styles.heroPhoto}>
+            <Image
+              src={ACADEMY.photos.daylight}
+              alt="Blue outdoor pickleball courts at Doon Pickleball Academy, Dehradun"
+              fill
+              priority
+              sizes="(max-width: 700px) 100vw, 65vw"
+            />
+            <span className={styles.photoCaption}>The academy, GMS Road</span>
+          </div>
+        </section>
+        <form
+          action="/book"
+          className={styles.heroFinder}
+          aria-label="Find a court"
+        >
+          <label className={styles.field}>
+            Choose a date
+            <select
+              className="academy-input"
+              name="date"
+              defaultValue=""
+              required
+            >
+              <option value="" disabled>
+                Select date
+              </option>
+              {dates.map((date) => (
+                <option key={date} value={date}>
+                  {formatCourtDate(date)}
+                </option>
               ))}
-              <Link href="/sign-in" className="transition hover:text-[var(--ink-strong)]">
-                Sign in
-              </Link>
-              <ThemeToggle />
-              <Link href="/demo" className="secondary-button px-4 py-2 text-sm">
-                Recruiter demo
-              </Link>
-            </nav>
-          </header>
-
-          <div className="grid gap-10 pt-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:pt-16">
-            <Reveal className="max-w-3xl">
-              <p className="section-eyebrow">A real club in {venue.location}</p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <span className="hero-badge">Browse without an account</span>
-                <span className="hero-badge">Credit, not refunds</span>
-                <span className="hero-badge">Front-desk tools built in</span>
-              </div>
-              <h1 className="display-font text-balance mt-5 text-6xl font-medium leading-[0.92] tracking-[-0.06em] text-[var(--ink-strong)] sm:text-7xl lg:text-[5.5rem]">
-                Good courts, fair pricing, and a club that remembers you.
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--ink-soft)]">
-                Sideout runs a family-owned pickleball venue in {venue.location}: booking, memberships, packs, and offers
-                for players, plus a console that keeps the front desk on top of the day. Everything below is browsable
-                without signing in.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link href="/app" className="primary-button">
-                  Open the live app
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link href="/demo" className="secondary-button">
-                  Recruiter demo
-                  <Sparkles className="h-4 w-4" />
-                </Link>
-                <Link href="/admin" className="secondary-button">
-                  View the operator OS
-                  <ArrowUpRight className="h-4 w-4" />
-                </Link>
-              </div>
-              <div className="mt-10 grid gap-4 sm:grid-cols-3">
-                <div>
-                  <p className="section-eyebrow">Venue</p>
-                  <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{publicSite.metrics.courtCount} courts</p>
-                </div>
-                <div className="vibe-divider pl-4 sm:pl-6">
-                  <p className="section-eyebrow">Repeat play</p>
-                  <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
-                    {formatPercent(publicSite.metrics.repeatPlayRate)}
-                  </p>
-                </div>
-                <div className="vibe-divider pl-4 sm:pl-6">
-                  <p className="section-eyebrow">Offer response</p>
-                  <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
-                    {publicSite.metrics.offersRedeemed} redemptions
-                  </p>
-                </div>
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.1}>
-              <div className="surface-card-dark relative overflow-hidden rounded-[2rem] p-6 sm:p-7">
-                <div className="hero-court-lines absolute inset-0 opacity-25" />
-                <div className="relative">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="mono-detail text-white/55">Tonight at Sideout</p>
-                      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
-                        Tonight&apos;s peak slots, with members paying less.
-                      </p>
-                    </div>
-                    <div className="rounded-full border border-white/10 px-3 py-2 text-sm text-white/70">Live preview</div>
-                  </div>
-
-                  <SideoutCourt3D />
-
-                  <div className="mt-8 grid gap-4">
-                    {highlightedSlots.slice(0, 3).map((slot) => (
-                      <article
-                        key={slot.id}
-                        className="rounded-[1.4rem] border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="mono-detail text-white/50">{formatVenueDate(slot.startsAt)}</p>
-                            <h2 className="mt-2 text-xl font-semibold">{slot.label}</h2>
-                            <p className="mt-2 text-sm text-white/70">{formatVenueRange(slot.startsAt, slot.endsAt)}</p>
-                          </div>
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-medium ${
-                              slot.availabilityState === "open" ? "status-open" : "status-review"
-                            }`}
-                          >
-                            {slot.availabilityState === "open" ? "Open" : "Limited"}
-                          </span>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between text-sm text-white/68">
-                          <span>{formatIndianCurrency(slot.priceInr)}</span>
-                          <span>{slot.paymentMode.replaceAll("_", " ")}</span>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-          </div>
+            </select>
+          </label>
+          <label className={styles.field}>
+            Choose a time
+            <select
+              className="academy-input"
+              name="time"
+              defaultValue=""
+              required
+            >
+              <option value="" disabled>
+                Select time
+              </option>
+              {Array.from({ length: 18 }, (_, index) => index + 6).map(
+                (hour) => (
+                  <option key={hour} value={hour}>
+                    {formatCourtTime(slotStart(dates[0], hour))}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+          <button type="submit" className="academy-button">
+            Find a court
+          </button>
+        </form>
+        <div id="courts" className={styles.facts}>
+          <span>
+            <LayoutGrid size={23} />4 outdoor courts
+          </span>
+          <span>
+            <Clock3 size={23} />6 AM – midnight
+          </span>
+          <span>
+            <Sun size={25} />
+            Floodlit evenings
+          </span>
         </div>
-      </section>
-
-      <Reveal className="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12" delay={0.04}>
-        <section id="story" className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
-          <SectionHeading
-            eyebrow="How the club runs"
-            title="Built the way the venue actually works."
-            description={venue.story}
-          />
-          <div className="grid gap-4 md:grid-cols-3">
-            {productPillars.map((pillar, index) => (
-              <article key={pillar.title} className="surface-card rounded-[1.8rem] p-6">
-                <p className="mono-detail text-[var(--ink-soft)]">0{index + 1}</p>
-                <h3 className="mt-5 text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
-                  {pillar.title}
-                </h3>
-                <p className="mt-4 text-sm leading-7 text-[var(--ink-soft)]">{pillar.copy}</p>
-              </article>
-            ))}
+        <section className={styles.playSection} aria-labelledby="play-heading">
+          <div>
+            <h2
+              id="play-heading"
+              className={`academy-heading ${styles.sectionHeading}`}
+            >
+              More ways to play.
+            </h2>
+            <div className={styles.pricingGrid}>
+              <Link href="/book" className={styles.priceCard}>
+                <LayoutGrid size={26} />
+                <h3>Book a court</h3>
+                <p className={styles.price}>
+                  {formatMoney(ACADEMY.courtPricePaise)}
+                  <span> / hour</span>
+                </p>
+                <p>
+                  {formatMoney(ACADEMY.memberCourtPricePaise)} per court-hour
+                  for active members.
+                </p>
+                <span className={styles.cardLink}>
+                  Choose a time <ArrowUpRight size={17} />
+                </span>
+              </Link>
+              <a href={ACADEMY.phoneHref} className={styles.priceCard}>
+                <Users size={26} />
+                <h3>Drop in &amp; play</h3>
+                <p className={styles.price}>
+                  {formatMoney(ACADEMY.individualPricePaise)}
+                  <span> / person / hour</span>
+                </p>
+                <p>
+                  Individual play, paid at the academy. Call to check space.
+                </p>
+                <span className={styles.cardLink}>
+                  Call the academy <ArrowUpRight size={17} />
+                </span>
+              </a>
+              <Link href="/membership" className={styles.priceCard}>
+                <Sun size={27} />
+                <h3>Become a member</h3>
+                <p className={styles.price}>
+                  {formatMoney(ACADEMY.membershipPricePaise)}
+                  <span> / month</span>
+                </p>
+                <p>
+                  One individual hour every day. Automatically renews monthly.
+                </p>
+                <span className={styles.cardLink}>
+                  See membership <ArrowUpRight size={17} />
+                </span>
+              </Link>
+            </div>
+          </div>
+          <div className={styles.eveningPhoto}>
+            <Image
+              src={ACADEMY.photos.evening}
+              alt="The academy's blue courts under evening floodlights"
+              fill
+              sizes="(max-width: 900px) 100vw, 30vw"
+            />
           </div>
         </section>
-      </Reveal>
-
-      <section id="availability" className="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12">
-        <Reveal>
-          <SectionHeading
-            eyebrow="Availability"
-            title="See the courts and prices before anyone asks you to log in."
-            description="Players check the week's slots, compare what each one allows, and see the price up front — no account, no wall. It's the first thing a new player runs into, so we keep it simple."
-          />
-        </Reveal>
-        <div className="mt-10 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-          <Reveal delay={0.06}>
-            <div className="surface-card-strong rounded-[2rem] p-6 sm:p-7">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <p className="section-eyebrow">Guest browsing</p>
-                  <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">Slot cards you can read at a glance.</h3>
-                </div>
-                <div className="inline-flex rounded-full border border-[var(--line-soft)] px-4 py-2 text-sm text-[var(--ink-soft)]">
-                  Asia/Kolkata
-                </div>
-              </div>
-              <div className="mt-6 grid gap-4">
-                {highlightedSlots.map((slot) => (
-                  <article
-                    key={slot.id}
-                    className="rounded-[1.6rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-5"
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="mono-detail text-[var(--ink-soft)]">{formatVenueDate(slot.startsAt)}</p>
-                        <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">{slot.label}</h3>
-                        <p className="mt-2 text-sm text-[var(--ink-soft)]">
-                          {formatVenueRange(slot.startsAt, slot.endsAt)} on{" "}
-                          {mockCourts.find((court) => court.id === slot.courtId)?.name ?? "Court deck"}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs font-medium">
-                        <span
-                          className={`rounded-full px-3 py-1 ${
-                            slot.availabilityState === "open" ? "status-open" : "status-limited"
-                          }`}
-                        >
-                          {slot.availabilityState}
-                        </span>
-                        <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[var(--accent)]">
-                          {slot.confirmationMode === "instant" ? "Instant confirm" : "Manual review"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[var(--ink-soft)]">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-[var(--background-strong)] px-3 py-2">
-                        <Clock3 className="h-4 w-4" />
-                        {slot.durationMinutes} min
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full bg-[var(--background-strong)] px-3 py-2">
-                        <Coins className="h-4 w-4" />
-                        {formatIndianCurrency(slot.priceInr)}
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full bg-[var(--background-strong)] px-3 py-2">
-                        <CalendarRange className="h-4 w-4" />
-                        {slot.paymentMode.replaceAll("_", " ")}
-                      </span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </Reveal>
-
-          <Reveal delay={0.12}>
-            <div className="grid gap-5">
-              <div className="surface-card rounded-[2rem] p-6">
-                <p className="section-eyebrow">What you&apos;re booking</p>
-                <ul className="mt-5 grid gap-4">
-                  <li className="rounded-[1.3rem] bg-white/65 dark:bg-white/[0.05] p-4">
-                    <div className="flex items-center gap-3">
-                      <Users2 className="h-5 w-5 text-[var(--accent-green)]" />
-                      <p className="font-medium">Court slots &mdash; some confirm instantly, some staff review first</p>
-                    </div>
-                  </li>
-                  <li className="rounded-[1.3rem] bg-white/65 dark:bg-white/[0.05] p-4">
-                    <div className="flex items-center gap-3">
-                      <Sparkles className="h-5 w-5 text-[var(--accent)]" />
-                      <p className="font-medium">Offers aimed at regulars, not blanket discounts</p>
-                    </div>
-                  </li>
-                  <li className="rounded-[1.3rem] bg-white/65 dark:bg-white/[0.05] p-4">
-                    <div className="flex items-center gap-3">
-                      <ShieldCheck className="h-5 w-5 text-[var(--accent-gold)]" />
-                      <p className="font-medium">Cancel in time and it comes back as credit, not a refund chase</p>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-              <div className="surface-card-dark rounded-[2rem] p-6">
-                <p className="section-eyebrow !text-white/55">Venue note</p>
-                <p className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-white">
-                  Real court photos are on the way.
-                </p>
-                <p className="mt-4 max-w-md text-sm leading-7 text-white/72">
-                  We&apos;re shooting sunrise sessions and league nights at the Dehradun courts. Until those land, you&apos;re
-                  looking at clean layout and live data &mdash; no stock photos standing in.
-                </p>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      <section id="memberships" className="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12">
-        <Reveal>
-          <SectionHeading
-            eyebrow="Memberships, packs, and offers"
-            title="Memberships and packs worth actually buying."
-            description="Packs, memberships, and credits are how regulars get a better rate — and how the club keeps the courts busy on the slow evenings. Priced for players who show up every week."
-          />
-        </Reveal>
-        <div className="mt-10 grid gap-5 lg:grid-cols-[0.9fr_0.55fr_0.55fr]">
-          {membershipPlans.map((plan, index) => (
-            <Reveal key={plan.id} delay={index * 0.05}>
-              <article className="surface-card-strong rounded-[2rem] p-6">
-                <p className="section-eyebrow">{index === 0 ? "Membership" : "Premium tier"}</p>
-                <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{plan.name}</h3>
-                <p className="mt-3 text-sm leading-7 text-[var(--ink-soft)]">
-                  {formatIndianCurrency(plan.monthlyPriceInr)} per month with {plan.includedCredits} included credits.
-                </p>
-                <ul className="mt-5 grid gap-3">
-                  {plan.perks.map((perk) => (
-                    <li key={perk} className="rounded-[1.2rem] bg-white/70 dark:bg-white/[0.06] px-4 py-3 text-sm leading-6 text-[var(--ink-soft)]">
-                      {perk}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            </Reveal>
-          ))}
-
-          {packProducts.map((pack, index) => (
-            <Reveal key={pack.id} delay={0.1 + index * 0.05}>
-              <article className="surface-card rounded-[2rem] p-6">
-                <p className="section-eyebrow">Pack</p>
-                <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{pack.name}</h3>
-                <p className="mt-4 text-sm leading-7 text-[var(--ink-soft)]">{pack.description}</p>
-                <div className="mt-6 flex items-end justify-between">
-                  <p className="metric-value">{pack.includedCredits}</p>
-                  <div className="text-right">
-                    <p className="mono-detail text-[var(--ink-soft)]">Credits</p>
-                    <p className="mt-1 text-lg font-semibold">{formatIndianCurrency(pack.priceInr)}</p>
-                  </div>
-                </div>
-              </article>
-            </Reveal>
-          ))}
-        </div>
-
-        <Reveal className="mt-8" delay={0.12}>
-          <div className="grid gap-4 md:grid-cols-3">
-            {offers.map((offer) => (
-              <article key={offer.id} className="surface-card rounded-[1.6rem] p-5">
-                <p className="section-eyebrow">{offer.status}</p>
-                <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">{offer.name}</h3>
-                <p className="mt-3 text-sm leading-7 text-[var(--ink-soft)]">{offer.headline}</p>
-                <div className="mt-5 text-sm text-[var(--ink-soft)]">
-                  <p>{offer.audience}</p>
-                  <p className="mt-1">{offer.slotScope}</p>
-                </div>
-              </article>
-            ))}
+        <section id="visit" className={styles.visitStrip}>
+          <div>
+            <p className="academy-eyebrow">Come play</p>
+            <h2 className={`academy-heading ${styles.sectionHeading}`}>
+              See you on court.
+            </h2>
+            <p>
+              <MapPin size={18} />
+              {ACADEMY.address}
+            </p>
           </div>
-        </Reveal>
-      </section>
-
-      <section id="operator-os" className="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12">
-        <Reveal>
-          <SectionHeading
-            eyebrow="Operator OS"
-            title="The other half: what the front desk sees."
-            description="Staff get more than a booking list. They see who's drifting away, which credits are about to expire, and where the next offer is worth sending — the small daily calls that keep a venue full."
-          />
-        </Reveal>
-        <div className="mt-10 grid gap-5 lg:grid-cols-[0.7fr_1.3fr]">
-          <Reveal delay={0.05}>
-            <div className="surface-card-dark rounded-[2rem] p-6">
-              <p className="section-eyebrow !text-white/55">Operator pulse</p>
-              <div className="mt-6 grid gap-4">
-                <article className="rounded-[1.5rem] border border-white/10 bg-white/4 p-5">
-                  <p className="mono-detail text-white/50">Occupancy</p>
-                  <p className="metric-value mt-2 text-white">{formatPercent(adminSummary.occupancyRate)}</p>
-                </article>
-                <article className="rounded-[1.5rem] border border-white/10 bg-white/4 p-5">
-                  <p className="mono-detail text-white/50">Repeat play</p>
-                  <p className="metric-value mt-2 text-white">{formatPercent(publicSite.metrics.repeatPlayRate)}</p>
-                </article>
-                <article className="rounded-[1.5rem] border border-white/10 bg-white/4 p-5">
-                  <p className="mono-detail text-white/50">Credits expiring</p>
-                  <p className="metric-value mt-2 text-white">{publicSite.metrics.creditsExpiringSoon}</p>
-                </article>
-              </div>
-            </div>
-          </Reveal>
-
-          <Reveal delay={0.1}>
-            <div className="surface-card-strong rounded-[2rem] p-6">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <p className="section-eyebrow">Retention surface</p>
-                  <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
-                    The players worth reaching before they drift off.
-                  </h3>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-[var(--accent-soft)] px-4 py-2 text-sm text-[var(--accent)]">
-                  <MapPin className="h-4 w-4" />
-                  {venue.location}
-                </div>
-              </div>
-              <div className="mt-6 grid gap-4">
-                {atRiskCustomers.map((entry) => (
-                  <article key={entry.profile.id} className="rounded-[1.5rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] p-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-xl font-semibold tracking-[-0.03em]">{entry.user.name}</p>
-                        <p className="mt-2 text-sm text-[var(--ink-soft)]">
-                          {entry.profile.favoriteWindow} player - last seen {entry.daysSinceLastAttendance} days ago
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-[var(--background-strong)] px-3 py-1 text-xs font-medium text-[var(--ink-soft)]">
-                        {entry.profile.tags[0]}
-                      </span>
-                    </div>
-                    <p className="mt-4 text-sm leading-7 text-[var(--ink-soft)]">{entry.note?.body}</p>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      <Reveal className="mx-auto max-w-7xl px-6 pb-24 pt-8 sm:px-8 lg:px-12">
-        <section className="surface-card-dark rounded-[2.4rem] p-7 sm:p-10">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-            <div>
-              <p className="section-eyebrow !text-white/55">Get on a court</p>
-              <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
-                Pick a court, hold it, and we&apos;ll see you on the day.
-              </h2>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-white/72">
-                Open the app to book your next slot. Or step into the operator console and watch how the venue runs a
-                busy evening &mdash; the same screens our staff use at the desk.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <Link href="/app" className="primary-button">
-                Open customer app
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link href="/admin" className="secondary-button secondary-button-dark">
-                Open admin console
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </div>
+          <div className={styles.actionRow}>
+            <a
+              href={ACADEMY.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="academy-button-secondary"
+            >
+              Get directions <ArrowUpRight size={17} />
+            </a>
+            <a href={ACADEMY.phoneHref} className="academy-button-secondary">
+              {ACADEMY.phone}
+            </a>
           </div>
         </section>
-      </Reveal>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

@@ -1,5 +1,4 @@
-import { CustomerOffersPage } from "@/components/customer/customer-offers-page";
-
-export default function CustomerOffersRoute() {
-  return <CustomerOffersPage />;
+import { redirect } from "next/navigation";
+export default function OffersPage() {
+  redirect("/membership");
 }

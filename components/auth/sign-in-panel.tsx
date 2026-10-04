@@ -1,509 +1,162 @@
 "use client";
 
-import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  CalendarCheck2,
-  CheckCircle2,
-  KeyRound,
-  Loader2,
-  Mail,
-  MessageSquareMore,
-  ShieldCheck,
-  Smartphone,
-  UserRound,
-} from "lucide-react";
-
+import Image from "next/image";
+import Link from "next/link";
+import { useState, type FormEvent } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { ACADEMY } from "@/lib/academy/config";
+import { safeReturnPath } from "./safe-return";
+import styles from "@/components/customer/academy-customer.module.css";
 
-interface SignInPanelProps {
-  isSupabaseConfigured: boolean;
-  /** Optional `?error=` query param from a failed auth redirect (see app/auth/callback). */
+export function SignInPanel({
+  next = "/app",
+  initialError,
+  configured,
+}: {
+  next?: string;
   initialError?: string | null;
-}
-
-type AuthMode = "customer" | "operator";
-type PortfolioRole = "customer" | "operator";
-
-type SubmitState = {
-  tone: "idle" | "success" | "error";
-  message: string;
-};
-
-const initialSubmitState: SubmitState = {
-  tone: "idle",
-  message:
-    "Use the demo Sideout accounts for a real Supabase session now. Email magic-link sign-in is available below; SMS OTP unlocks once a Supabase phone provider is configured.",
-};
-
-const isPhoneOtpEnabled = process.env.NEXT_PUBLIC_SUPABASE_PHONE_OTP_ENABLED === "true";
-
-// Only expose the internal diagnostics panel when explicitly opted in (demo story)
-// or when Supabase is absent (demo runtime) — never on a real production deploy.
-const showSystemStatusFlag = process.env.NEXT_PUBLIC_SHOW_SYSTEM_STATUS === "true";
-
-// Friendly copy for the error query param surfaced after a failed redirect (T05).
-const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  supabase_not_configured:
-    "Sign-in could not complete: Supabase is not configured for this deployment. Add the Supabase URL and anon key, then try again.",
-  client_init_failed:
-    "Sign-in could not complete: the Supabase client failed to initialize. Refresh and try again, or contact the venue admin.",
-  supabase_missing:
-    "Supabase is not configured yet. Add the URL, anon key, and service role key before using account access.",
-  portfolio_login_failed: "Sideout could not open that demo account. Please try again in a moment.",
-};
-
-function getAuthErrorMessage(error: string) {
-  return AUTH_ERROR_MESSAGES[error] ?? error;
-}
-
-function normalizePhoneNumber(value: string) {
-  const compact = value.replace(/[^\d+]/g, "");
-  const digits = compact.replace(/\D/g, "");
-
-  if (compact.startsWith("+")) {
-    return `+${digits}`;
-  }
-
-  if (digits.length === 10) {
-    return `+91${digits}`;
-  }
-
-  if (digits.length === 12 && digits.startsWith("91")) {
-    return `+${digits}`;
-  }
-
-  return compact;
-}
-
-function getPhoneOtpErrorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : "Sideout could not send the phone OTP.";
-
-  if (message.toLowerCase().includes("unsupported phone")) {
-    return "Phone OTP is not enabled for this Supabase project yet. Use Live customer account for now, or configure Supabase Phone Auth with an SMS provider.";
-  }
-
-  return message;
-}
-
-export function SignInPanel({ isSupabaseConfigured, initialError }: SignInPanelProps) {
-  const router = useRouter();
-  // When SMS OTP is off, email magic-link ("operator" mode) is the primary self-serve path.
-  const [mode, setMode] = useState<AuthMode>(isPhoneOtpEnabled ? "customer" : "operator");
+  configured: boolean;
+}) {
+  const enabled =
+    configured && process.env.NEXT_PUBLIC_ACADEMY_BACKEND_ENABLED === "true";
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("+91 ");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitState, setSubmitState] = useState<SubmitState>(
-    initialError ? { tone: "error", message: getAuthErrorMessage(initialError) } : initialSubmitState,
+  const [busy, setBusy] = useState<"google" | "email" | null>(null);
+  const [notice, setNotice] = useState<string | null>(
+    initialError
+      ? "Your sign-in link could not complete. Please request a new link or try Google."
+      : null,
   );
-  const [activePortfolioRole, setActivePortfolioRole] = useState<PortfolioRole | null>(null);
-
-  // Diagnostics panel: opt-in flag, or demo runtime (Supabase absent). Off by default in prod.
-  const showSystemStatus = showSystemStatusFlag || !isSupabaseConfigured;
-
-  const operatorRedirectUrl = useMemo(() => {
-    const origin = typeof window === "undefined" ? "http://localhost:3000" : window.location.origin;
-    return `${origin}/auth/callback?next=/admin`;
-  }, []);
-
-  async function enterPortfolioAccount(role: PortfolioRole) {
-    if (!isSupabaseConfigured) {
-      setSubmitState({
-        tone: "error",
-        message: "Supabase is not configured yet. Add the URL, anon key, and service role key in .env.local first.",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    setActivePortfolioRole(role);
-    setSubmitState({
-      tone: "idle",
-      message:
-        role === "operator"
-          ? "Preparing the operator account, venue role, and live Supabase session."
-          : "Preparing the customer account, member profile, and live Supabase session.",
-    });
-
-    window.location.assign(`/auth/portfolio?role=${role}`);
+  const [sent, setSent] = useState(false);
+  const returnPath = safeReturnPath(next);
+  function callbackUrl() {
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnPath)}`;
   }
-
-  async function handleOperatorSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!isSupabaseConfigured) {
-      setSubmitState({
-        tone: "error",
-        message: "Supabase environment variables are missing. Add them in .env.local before trying the real auth flow.",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
+  async function googleSignIn() {
+    if (!enabled || busy) return;
+    setBusy("google");
+    setNotice(null);
     try {
-      const supabase = createBrowserSupabaseClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: operatorRedirectUrl,
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      setSubmitState({
-        tone: "success",
-        message: `Magic link sent to ${email}. Open it on this device and Sideout will return you to the operator console.`,
-      });
-    } catch (error) {
-      setSubmitState({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Sideout could not start the operator auth flow.",
-      });
-    } finally {
-      setIsSubmitting(false);
+      const { error } =
+        await createBrowserSupabaseClient().auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: callbackUrl() },
+        });
+      if (error) throw error;
+    } catch {
+      setNotice(
+        "Google sign-in is unavailable right now. Try an email link or call the academy for help.",
+      );
+      setBusy(null);
     }
   }
-
-  async function handlePhoneSubmit(event: FormEvent<HTMLFormElement>) {
+  async function emailSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!isSupabaseConfigured) {
-      setSubmitState({
-        tone: "error",
-        message: "Supabase environment variables are missing. Add them in .env.local before trying the real auth flow.",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
+    if (!enabled || busy) return;
+    setBusy("email");
+    setNotice(null);
+    setSent(false);
     try {
-      if (!isPhoneOtpEnabled) {
-        throw new Error(
-          "Phone OTP is not enabled yet. Enable Supabase Phone Auth, configure an SMS provider, then set NEXT_PUBLIC_SUPABASE_PHONE_OTP_ENABLED=true.",
-        );
-      }
-
-      const trimmedPhone = normalizePhoneNumber(phone);
-      if (!/^\+[1-9]\d{9,14}$/.test(trimmedPhone)) {
-        throw new Error("Enter a full Indian mobile number, for example +91 81260 60338.");
-      }
-
-      const supabase = createBrowserSupabaseClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: trimmedPhone,
-        options: {
-          data: {
-            phone: trimmedPhone,
-          },
-        },
+      const { error } = await createBrowserSupabaseClient().auth.signInWithOtp({
+        email: email.trim().toLowerCase(),
+        options: { emailRedirectTo: callbackUrl() },
       });
-
-      if (error) {
-        throw error;
-      }
-
-      setOtpSent(true);
-      setSubmitState({
-        tone: "success",
-        message: `OTP sent to ${trimmedPhone}. Enter the code below to continue into the customer app.`,
-      });
-    } catch (error) {
-      setSubmitState({
-        tone: "error",
-        message: getPhoneOtpErrorMessage(error),
-      });
+      if (error) throw error;
+      setSent(true);
+      setNotice(
+        `Check ${email.trim()} for your sign-in link. Open it in this browser to continue where you left off.`,
+      );
+    } catch {
+      setNotice(
+        "We couldn't send your sign-in link. Try again in a moment, use Google, or call the academy for help.",
+      );
     } finally {
-      setIsSubmitting(false);
+      setBusy(null);
     }
   }
-
-  async function handleOtpVerify(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!isSupabaseConfigured) {
-      setSubmitState({
-        tone: "error",
-        message: "Supabase environment variables are missing. Add them in .env.local before trying the real auth flow.",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const trimmedPhone = phone.replace(/\s+/g, "");
-      const supabase = createBrowserSupabaseClient();
-      const { error } = await supabase.auth.verifyOtp({
-        phone: trimmedPhone,
-        token: otp.trim(),
-        type: "sms",
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      setSubmitState({
-        tone: "success",
-        message: "Phone verified. Redirecting you into the Sideout customer app.",
-      });
-      router.push("/app/bookings");
-      router.refresh();
-    } catch (error) {
-      setSubmitState({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Sideout could not verify that OTP.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
   return (
-    <div className={`grid gap-6 ${showSystemStatus ? "lg:grid-cols-[1.12fr_0.88fr]" : ""}`}>
-      <section className="surface-card-strong rounded-[2rem] p-6 sm:p-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="section-eyebrow">Live access</span>
-          <span className="rounded-full border border-[rgba(31,106,84,0.18)] bg-[rgba(31,106,84,0.08)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-deep)]">
-            Live workspace
-          </span>
-        </div>
-        <h1 className="mt-4 max-w-4xl text-5xl font-semibold tracking-[-0.05em] text-[var(--ink-strong)] sm:text-6xl">
-          Sign in as a player, or as the venue.
+    <div className={styles.authLayout}>
+      <div className={styles.authPhoto}>
+        <Image
+          src={ACADEMY.photos.daylight}
+          alt="A sunny day on the academy's outdoor courts"
+          fill
+          priority
+          sizes="50vw"
+        />
+      </div>
+      <section className={styles.authForm}>
+        <h1 className="academy-heading">
+          Your game.
+          <br />
+          Your account.
         </h1>
-        <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--ink-soft)]">
-          A real signed-in session, not throwaway demo state. Player access opens booking and your wallet; operator
-          access opens the schedule and the front-desk tools.
+        <p className={styles.intro}>
+          Sign in to book a court, find your reservations and manage your
+          membership.
         </p>
-
-        <div className="mt-8 grid gap-3 md:grid-cols-2">
-          <button
-            type="button"
-            className="group rounded-[1.5rem] border border-[rgba(31,106,84,0.2)] bg-[rgba(31,106,84,0.08)] p-5 text-left transition hover:-translate-y-0.5 hover:border-[rgba(31,106,84,0.35)] hover:bg-[rgba(31,106,84,0.12)] disabled:cursor-not-allowed disabled:opacity-65"
-            disabled={isSubmitting}
-            onClick={() => void enterPortfolioAccount("customer")}
-          >
-            <span className="flex items-center justify-between gap-4">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-[var(--accent-deep)] shadow-sm">
-                <UserRound className="h-5 w-5" />
-              </span>
-              {activePortfolioRole === "customer" ? (
-                <Loader2 className="h-5 w-5 animate-spin text-[var(--accent-deep)]" />
-              ) : (
-                <ArrowRight className="h-5 w-5 text-[var(--accent-deep)] transition group-hover:translate-x-0.5" />
-              )}
-            </span>
-            <span className="mt-5 block text-lg font-semibold text-[var(--ink-strong)]">Demo customer account</span>
-            <span className="mt-2 block text-sm leading-6 text-[var(--ink-soft)]">
-              Sign in as a player, view live availability, hold a slot, and continue to checkout.
-            </span>
-          </button>
-          <button
-            type="button"
-            className="group rounded-[1.5rem] border border-[rgba(11,31,39,0.14)] bg-white/75 dark:bg-white/[0.06] dark:border-white/12 p-5 text-left shadow-[0_18px_45px_rgba(11,31,39,0.08)] transition hover:-translate-y-0.5 hover:border-[rgba(11,31,39,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
-            disabled={isSubmitting}
-            onClick={() => void enterPortfolioAccount("operator")}
-          >
-            <span className="flex items-center justify-between gap-4">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--ink-strong)] text-white shadow-sm">
-                <ShieldCheck className="h-5 w-5" />
-              </span>
-              {activePortfolioRole === "operator" ? (
-                <Loader2 className="h-5 w-5 animate-spin text-[var(--ink-strong)]" />
-              ) : (
-                <ArrowRight className="h-5 w-5 text-[var(--ink-strong)] transition group-hover:translate-x-0.5" />
-              )}
-            </span>
-            <span className="mt-5 block text-lg font-semibold text-[var(--ink-strong)]">Demo operator account</span>
-            <span className="mt-2 block text-sm leading-6 text-[var(--ink-soft)]">
-              Sign in as staff, manage the court schedule, blocks, pricing, bookings, and revenue.
-            </span>
-          </button>
-        </div>
-
-        <div
-          className={`mt-6 rounded-[1.5rem] border px-4 py-4 text-sm leading-7 ${
-            submitState.tone === "success"
-              ? "border-[rgba(31,106,84,0.18)] bg-[rgba(31,106,84,0.08)] text-[var(--ink-strong)]"
-              : submitState.tone === "error"
-                ? "border-[rgba(221,105,56,0.2)] bg-[rgba(221,105,56,0.08)] text-[var(--ink-strong)]"
-                : "border-[var(--line-soft)] bg-white/65 dark:bg-white/[0.05] text-[var(--ink-soft)]"
-          }`}
-        >
-          {submitState.message}
-        </div>
-
-        <div className="mt-8 rounded-[1.5rem] border border-[var(--line-soft)] bg-white/55 dark:bg-white/[0.04] p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-[var(--ink-strong)]">
-                {isPhoneOtpEnabled ? "Provider auth rails" : "Email magic-link sign-in"}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-                {isPhoneOtpEnabled
-                  ? "Use these when Supabase SMS or email delivery is configured for production. Indian numbers are normalized to E.164, for example +91 8126060338 becomes +918126060338."
-                  : "We'll email you a one-tap link to sign in. SMS OTP becomes available once a Supabase phone provider is configured."}
-              </p>
-            </div>
-            {/* Only offer the SMS/Email toggle when SMS OTP is actually enabled; otherwise email is the sole, primary path. */}
-            {isPhoneOtpEnabled ? (
-              <div className="inline-flex rounded-full border border-[var(--line-soft)] bg-white/80 p-1">
-                <button
-                  type="button"
-                  className={`rounded-full px-4 py-2 text-sm transition ${
-                    mode === "customer" ? "bg-[var(--ink-strong)] text-white" : "text-[var(--ink-soft)]"
-                  }`}
-                  onClick={() => setMode("customer")}
-                >
-                  SMS OTP
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-full px-4 py-2 text-sm transition ${
-                    mode === "operator" ? "bg-[var(--ink-strong)] text-white" : "text-[var(--ink-soft)]"
-                  }`}
-                  onClick={() => setMode("operator")}
-                >
-                  Email link
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-        {mode === "customer" ? (
-          <div className="mt-8 grid gap-4">
-            <form className="grid gap-4" onSubmit={handlePhoneSubmit}>
-              <label className="grid gap-2">
-                <span className="text-sm font-medium text-[var(--ink-strong)]">Phone number</span>
-                <input
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder="+91 81260 60338"
-                  className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
-                />
-                <span className="text-xs leading-5 text-[var(--ink-soft)]">
-                  {isPhoneOtpEnabled
-                    ? `Will send to ${normalizePhoneNumber(phone)}`
-                    : "SMS delivery is off until Supabase Phone Auth and an SMS provider are enabled."}
-                </span>
-              </label>
-              <button
-                type="submit"
-                className="primary-button w-fit px-5 py-3 text-sm"
-                disabled={isSubmitting || !isPhoneOtpEnabled}
-                title={
-                  isPhoneOtpEnabled
-                    ? "Send phone OTP"
-                    : "Enable Supabase Phone Auth and an SMS provider before sending OTPs"
-                }
-              >
-                <Smartphone className="h-4 w-4" />
-                {isSubmitting ? "Sending OTP..." : isPhoneOtpEnabled ? "Send OTP" : "SMS provider required"}
-              </button>
-            </form>
-
-            {otpSent ? (
-              <form className="grid gap-4 rounded-[1.5rem] border border-[var(--line-soft)] bg-white/55 dark:bg-white/[0.04] p-4" onSubmit={handleOtpVerify}>
-                <label className="grid gap-2">
-                  <span className="text-sm font-medium text-[var(--ink-strong)]">Verification code</span>
-                  <input
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    required
-                    value={otp}
-                    onChange={(event) => setOtp(event.target.value)}
-                    placeholder="123456"
-                    className="rounded-[1.1rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
-                  />
-                </label>
-                <button type="submit" className="primary-button w-fit px-5 py-3 text-sm" disabled={isSubmitting}>
-                  <MessageSquareMore className="h-4 w-4" />
-                  {isSubmitting ? "Verifying..." : "Verify OTP"}
-                </button>
-              </form>
-            ) : null}
-          </div>
-        ) : (
-          <form className="mt-8 grid gap-4" onSubmit={handleOperatorSubmit}>
-            <label className="grid gap-2">
-              <span className="text-sm font-medium text-[var(--ink-strong)]">Email address</span>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="owner@sideout.club"
-                className="rounded-[1.3rem] border border-[var(--line-soft)] bg-white/70 dark:bg-white/[0.06] px-4 py-3 text-base text-[var(--ink-strong)] outline-none transition focus:border-[var(--accent)]"
-              />
-            </label>
-            <button type="submit" className="primary-button w-fit px-5 py-3 text-sm" disabled={isSubmitting}>
-              <Mail className="h-4 w-4" />
-              {isSubmitting ? "Sending link..." : "Send magic link"}
-            </button>
-          </form>
+        {!enabled && (
+          <p role="status" className={styles.notice}>
+            Online sign-in is currently unavailable. You can browse the academy
+            and call <a href={ACADEMY.phoneHref}>{ACADEMY.phone}</a> to arrange
+            a game.
+          </p>
         )}
-        </div>
-      </section>
-
-      {showSystemStatus ? (
-      <section className="surface-card-dark rounded-[2rem] p-6 sm:p-7">
-        <p className="section-eyebrow !text-white/55">System status</p>
-        <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-white">A real entry point for the club OS.</h2>
-        <p className="mt-3 text-sm leading-7 text-white/70">
-          This page now gives you a working route into the product while still exposing the real production auth
-          options Sideout will use.
+        <button
+          className={`academy-button-secondary ${styles.googleButton}`}
+          disabled={!enabled || busy !== null}
+          onClick={() => void googleSignIn()}
+        >
+          <span className={styles.googleMark} aria-hidden="true">
+            G
+          </span>
+          {busy === "google" ? "Opening Google…" : "Continue with Google"}
+        </button>
+        <div className={styles.divider}>or use your email</div>
+        <form onSubmit={(event) => void emailSignIn(event)}>
+          <label className={styles.field}>
+            Email address
+            <input
+              className="academy-input"
+              type="email"
+              autoComplete="email"
+              maxLength={254}
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+              disabled={!enabled || busy !== null}
+            />
+          </label>
+          <button
+            type="submit"
+            className={`academy-button ${styles.fullButton}`}
+            disabled={!enabled || busy !== null}
+          >
+            {busy === "email"
+              ? "Sending your link…"
+              : sent
+                ? "Send another sign-in link"
+                : "Email me a sign-in link"}
+          </button>
+        </form>
+        {notice && (
+          <p
+            role={sent ? "status" : "alert"}
+            className={sent ? styles.notice : styles.error}
+          >
+            {notice}
+          </p>
+        )}
+        <p className={styles.small}>
+          No password needed. New here? Your player account is created when you
+          sign in. By continuing, you agree to our{" "}
+          <Link href="/terms">terms</Link> and{" "}
+          <Link href="/privacy">privacy notice</Link>.
         </p>
-        <div className="mt-6 grid gap-4">
-          <article className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-3">
-              <KeyRound className="h-5 w-5 text-white/80" />
-              <p className="font-medium text-white">
-                {isSupabaseConfigured ? "Supabase keys present" : "Supabase missing"}
-              </p>
-            </div>
-            <p className="mt-3 text-sm leading-7 text-white/70">
-              {isSupabaseConfigured
-                ? "The live account buttons validate the active project, create confirmed Auth users, and sign into the browser session with password auth."
-                : "Add your Supabase URL, anon key, and service role key in .env.local before using live account access."}
-            </p>
-          </article>
-          <article className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-3">
-              <CalendarCheck2 className="h-5 w-5 text-white/80" />
-              <p className="font-medium text-white">Booking-ready path</p>
-            </div>
-            <p className="mt-3 text-sm leading-7 text-white/70">
-              Customer sessions land on live availability. Operator sessions land on the live venue dashboard and schedule.
-            </p>
-          </article>
-          <article className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-white/80" />
-              <p className="font-medium text-white">Recruiter walkthrough</p>
-            </div>
-            <p className="mt-3 text-sm leading-7 text-white/70">
-              The separate demo site stays available for explaining the product story, but the main app now points to
-              the real booking stack.
-            </p>
-          </article>
-          <a href="/demo" className="secondary-button secondary-button-dark mt-2 w-fit px-4 py-2 text-sm">
-            Open recruiter demo
-            <ArrowRight className="h-4 w-4" />
-          </a>
-        </div>
+        <Link href="/book" className={styles.small}>
+          Back to court availability
+        </Link>
       </section>
-      ) : null}
     </div>
   );
 }

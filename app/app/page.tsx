@@ -1,5 +1,5 @@
-import { CustomerDashboard } from "@/components/customer/customer-dashboard";
-
-export default function CustomerPage() {
-  return <CustomerDashboard />;
+import { CustomerAccount } from "@/components/customer/customer-account";
+export const metadata = { title: "Your account" };
+export default function AccountPage() {
+  return <CustomerAccount />;
 }

@@ -1,5 +1,4 @@
-import { CustomerWalletPage } from "@/components/customer/customer-wallet-page";
-
-export default function CustomerWalletRoute() {
-  return <CustomerWalletPage />;
+import { redirect } from "next/navigation";
+export default function WalletPage() {
+  redirect("/app");
 }

@@ -89,6 +89,7 @@ describe("demo booking lifecycle", () => {
 
     expect(created.status).toBe("confirmed");
     expect(created.paymentStatus).toBe("credit_applied");
+    if (created.totalAmountInr == null) throw new Error("Confirmed demo booking must have a total.");
     expect(getWalletBalance(nextState, FUNDED_CUSTOMER)).toBe(startingBalance - created.totalAmountInr);
   });
 

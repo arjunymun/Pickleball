@@ -1,9 +1,9 @@
-import { OperatorDashboard } from "@/components/admin/operator-dashboard";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Operator Demo",
 };
 
 export default function DemoOperatorPage() {
-  return <OperatorDashboard />;
+  redirect("/demo#sandbox-title");
 }

@@ -1,23 +1,36 @@
+import { SiteHeader } from "@/components/academy/site-header";
+import { SiteFooter } from "@/components/academy/site-footer";
 import { SignInPanel } from "@/components/auth/sign-in-panel";
-import { getAuthState } from "@/lib/auth";
+import { safeReturnPath } from "@/components/auth/safe-return";
+import { getAcademySession } from "@/lib/academy/server";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Sign In",
-};
-
+export const metadata = { title: "Sign in", robots: { index: false } };
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string | string[] }>;
+  searchParams: Promise<{
+    next?: string | string[];
+    error?: string | string[];
+  }>;
 }) {
-  const [authState, params] = await Promise.all([getAuthState(), searchParams]);
-  const errorParam = Array.isArray(params.error) ? params.error[0] : params.error;
-
+  const params = await searchParams;
+  const next = safeReturnPath(params.next);
+  const session = await getAcademySession().catch(() => null);
+  if (session?.user) redirect(next);
   return (
-    <main className="page-frame min-h-screen px-6 pb-20 pt-8 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-7xl">
-        <SignInPanel isSupabaseConfigured={authState.isConfigured} initialError={errorParam ?? null} />
-      </div>
-    </main>
+    <>
+      <SiteHeader />
+      <main id="main-content" className="academy-container">
+        <SignInPanel
+          next={next}
+          initialError={
+            Array.isArray(params.error) ? params.error[0] : params.error
+          }
+          configured={session?.configured ?? false}
+        />
+      </main>
+      <SiteFooter />
+    </>
   );
 }
