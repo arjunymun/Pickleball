@@ -5,6 +5,7 @@ This is the single owner-input gate for connecting the locally verified academy 
 ## Business and account decisions
 
 - [ ] Confirm the canonical production domain and which deployment account/provider will host it.
+- [ ] Confirm the country to use on first Google Cloud onboarding; the current first-use screen defaults to Canada. No Google Cloud project, OAuth client, billing account, or paid resource has been created.
 - [x] Check the current Supabase project creation price for the existing organization immediately before provisioning: the connected Supabase tool quoted $0/month on October 3, 2026; its cost-confirmation step completed.
 - [ ] Confirm the owner and trusted staff email addresses to receive staff access. No password or one-time code is needed in chat.
 - [ ] Confirm the sender name/address customers should see in sign-in and booking email, and that the sender domain can be verified.
@@ -17,7 +18,7 @@ This is the single owner-input gate for connecting the locally verified academy 
 - [x] Add this project's existing service-role key only to the git-ignored local server environment (`.env.development.local`). It was validated against the `service_role` JWT claim; academy enable switches remain off, and the different-project `.env.local` was not reused.
 - [ ] Configure Google OAuth and email magic-link SMTP and set the exact production `/auth/callback` redirect. Do not turn on the academy switches until these settings and owner/staff authorization are verified.
 - [ ] Create/configure the Google OAuth client and add the Supabase callback URL in Google Cloud. Register the academy production callback in Supabase Auth.
-- [ ] Configure custom SMTP, verify the sender domain’s DNS records, and set the sender name/address. Put the SMTP secret in the provider dashboard; do not send it in chat.
+- [ ] Select and configure a no-cost custom SMTP provider, verify the sender domain’s DNS records, and set the sender name/address. Brevo Free is a candidate (300 sends/day and SMTP support as of October 4) but requires an authenticated domain; confirm current limits before use. Put the SMTP secret in the provider dashboard; do not send it in chat.
 - [ ] Create the ₹2,500/month Razorpay subscription plan. Enable automatic capture and subscriptions on the merchant account. Configure the payment webhook URL from `backend-setup.md`, select the documented events, and generate a webhook secret.
 - [ ] Create test-mode Razorpay keys and webhook secret first. Keep live keys disabled until the staging checklist in `backend-setup.md` is fully passed.
 - [ ] Keep payment testing in gateway test mode to honor the current zero-cost instruction. Razorpay's posted standard transaction charge is 2% + GST on successful payments; a limited offer is available only to eligible merchants under its terms. Recheck merchant-specific terms before any live payment activation. [Pricing](https://razorpay.com/pricing/) · [offer terms](https://razorpay.com/terms/subscription-plans/).
