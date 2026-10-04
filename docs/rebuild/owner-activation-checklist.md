@@ -4,7 +4,7 @@ This is the single owner-input gate for connecting the locally verified academy 
 
 ## Business and account decisions
 
-- [x] Owner has no custom domain and does not authorize domain/hosting charges. Use a provider subdomain for staging while available; preferred candidate is Netlify Free, whose current documentation supports Next.js App Router and a `*.netlify.app` site address. Confirm the account's Free-plan limits before deployment; free hosting has no service-level commitment and may suspend the site at its limits. ChatGPT Sites can publish separate lightweight sites, but it is not the hosting/deployment pipeline for this existing Next.js/Supabase application. A custom domain is not included and would have to be purchased separately.
+- [x] Owner has no custom domain and does not authorize domain/hosting charges. The repository already has a successful Vercel Production deployment; use that existing Vercel project, not Netlify. The exact plan/tier and stable production URL still need verification. Vercel Hobby is restricted to personal/non-commercial use; if the existing project is on Hobby it is not eligible for the academy business. A Pro tier may incur charges and is not authorized.
 - [x] Use India for first Google Cloud onboarding. No Google Cloud project, OAuth client, billing account, or paid resource has been created. Keep billing unlinked/disabled.
 - [x] Check the current Supabase project creation price for the existing organization immediately before provisioning: the connected Supabase tool quoted $0/month on October 3, 2026; its cost-confirmation step completed.
 - [x] Owner requests access for themself only; no additional staff accounts. Assign the signed-in owner account after first verified sign-in. No password or one-time code is needed in chat.
@@ -22,8 +22,8 @@ This is the single owner-input gate for connecting the locally verified academy 
 - [on hold] Create test-mode Razorpay keys and webhook secret. Do not create keys while the hold is active.
 - [on hold] Razorpay payment testing and any live-payment activation. No charges or paid account upgrades are authorized.
 - [x] Generate a private 32-byte `CRON_SECRET` for local development and store it only in ignored `.env.development.local`.
-- [ ] Deploy a staging build to the chosen no-cost provider subdomain after its account is authenticated; do not enable automatic GitHub deployment or push commits without separate authorization. Verify the free plan cannot incur usage charges and note its suspension/no-SLA limits.
-- [ ] Configure a compatible scheduler for `/api/cron/reconcile` and private `CRON_SECRET`; verify runtime limits first. Netlify scheduled functions have a shorter execution limit than this endpoint's current 120-second maximum, so do not assume a direct scheduled-function deployment is compatible. Evaluate an alternative scheduler or make a tested bounded-runtime adjustment before activation.
+- [ ] Deploy a staging build to the existing Vercel project after its plan and stable project URL are verified; do not enable automatic GitHub deployment or push commits without separate authorization. Verify the configured plan is eligible for commercial use and cannot incur unauthorized charges.
+- [ ] Configure a compatible scheduler for `/api/cron/reconcile` and private `CRON_SECRET`; verify runtime limits first. Vercel Hobby cron runs only once per day, while this endpoint is intended to run every five minutes; verify the actual plan and select a compatible scheduler/runtime before activation. Evaluate an alternative scheduler or make a tested bounded-runtime adjustment before activation.
 - [ ] Add the remaining academy environment variables from `.env.example` to private staging settings. Keep customer and server enable switches off until OAuth and owner authorization are verified. Keep email-dependent flows unavailable until custom SMTP is configured.
 
 ## Share safely for integration
