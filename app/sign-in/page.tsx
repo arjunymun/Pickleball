@@ -28,6 +28,7 @@ export default async function SignInPage({
             Array.isArray(params.error) ? params.error[0] : params.error
           }
           configured={session?.configured ?? false}
+          emailConfigured={process.env.ACADEMY_EMAIL_AUTH_ENABLED === "true"}
         />
       </main>
       <SiteFooter />

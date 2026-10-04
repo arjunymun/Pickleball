@@ -119,7 +119,7 @@ try {
   started = true;
   const admin = await connect();
   await admin.query(
-    "create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls; create schema auth; create table auth.users(id uuid primary key); grant usage on schema public,auth to anon,authenticated,service_role; grant select on auth.users to service_role;",
+    "create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls; create schema auth; create table auth.users(id uuid primary key); grant usage on schema public,auth to anon,authenticated,service_role;",
   );
   const migrationDirectory = path.join(workspace, "supabase/migrations");
   const migrations = (await readdir(migrationDirectory))
@@ -158,6 +158,25 @@ try {
   await admin.query("update academy_customers set role='staff' where id=$1", [
     staff,
   ]);
+  await test("customer repair works without auth table read access and rejects nonexistent identities", async () => {
+    const privileges = await admin.query(
+      "select has_table_privilege('service_role','auth.users','select') as allowed",
+    );
+    assert.equal(privileges.rows[0].allowed, false);
+    await assert.rejects(
+      rpc(
+        service,
+        "repair_customer",
+        { email: "missing@example.test", name: "Missing identity" },
+        randomUUID(),
+      ),
+      (error) => error.code === "23503",
+    );
+    assert.equal(
+      (await rpc(service, "session", {}, customerA)).user.role,
+      "customer",
+    );
+  });
   const day = (
     await admin.query(
       "select (((now() at time zone 'Asia/Kolkata')::date)+1)::text as day",

@@ -12,10 +12,12 @@ export function SignInPanel({
   next = "/app",
   initialError,
   configured,
+  emailConfigured = false,
 }: {
   next?: string;
   initialError?: string | null;
   configured: boolean;
+  emailConfigured?: boolean;
 }) {
   const enabled =
     configured && process.env.NEXT_PUBLIC_ACADEMY_BACKEND_ENABLED === "true";
@@ -51,7 +53,7 @@ export function SignInPanel({
   }
   async function emailSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!enabled || busy) return;
+    if (!enabled || !emailConfigured || busy) return;
     setBusy("email");
     setNotice(null);
     setSent(false);
@@ -111,34 +113,45 @@ export function SignInPanel({
           </span>
           {busy === "google" ? "Opening Google…" : "Continue with Google"}
         </button>
-        <div className={styles.divider}>or use your email</div>
-        <form onSubmit={(event) => void emailSignIn(event)}>
-          <label className={styles.field}>
-            Email address
-            <input
-              className="academy-input"
-              type="email"
-              autoComplete="email"
-              maxLength={254}
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              disabled={!enabled || busy !== null}
-            />
-          </label>
-          <button
-            type="submit"
-            className={`academy-button ${styles.fullButton}`}
-            disabled={!enabled || busy !== null}
-          >
-            {busy === "email"
-              ? "Sending your link…"
-              : sent
-                ? "Send another sign-in link"
-                : "Email me a sign-in link"}
-          </button>
-        </form>
+        {emailConfigured ? (
+          <>
+            <div className={styles.divider}>or use your email</div>
+            <form onSubmit={(event) => void emailSignIn(event)}>
+              <label className={styles.field}>
+                Email address
+                <input
+                  className="academy-input"
+                  type="email"
+                  autoComplete="email"
+                  maxLength={254}
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  disabled={!enabled || busy !== null}
+                />
+              </label>
+              <button
+                type="submit"
+                className={`academy-button ${styles.fullButton}`}
+                disabled={!enabled || busy !== null}
+              >
+                {busy === "email"
+                  ? "Sending your link…"
+                  : sent
+                    ? "Send another sign-in link"
+                    : "Email me a sign-in link"}
+              </button>
+            </form>
+          </>
+        ) : (
+          enabled && (
+            <p role="status" className={styles.small}>
+              Email sign-in is currently unavailable. Continue with Google or
+              call the academy for help.
+            </p>
+          )
+        )}
         {notice && (
           <p
             role={sent ? "status" : "alert"}
