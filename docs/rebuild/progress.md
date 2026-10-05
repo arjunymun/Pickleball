@@ -9,6 +9,15 @@ Last updated: October 4, 2026 (America/Denver). The full approved scope remains 
 - Until a verified payment destination and staff confirmation workflow exist, the hosted booking review now says its ten-minute hold is not confirmed, and directs the customer to call the academy. The privacy notice accurately says that online checkout is unavailable. Staff can create a phone reservation and record an externally received payment; that is a staff action, not automatic online settlement.
 - QR/manual UPI cannot satisfy the approved automatic monthly membership rule by itself. Keep membership checkout unavailable until a recurring provider is verified, or obtain an explicit business-rule change for manual monthly renewal. Never mark a QR payment paid based solely on a customer-submitted screenshot/reference.
 
+## Interactive court explorer refinement — October 4
+
+- The owner's second reference (`https://www.youtube.com/watch?v=qTWOkhytG0M`) prompted a stronger visual direction: a consistent dark athletic homepage, oversized editorial typography, lime accents, real venue photography and a functional 3D court explorer. This supersedes the illustrative Remotion hero below; unused Remotion components and dependencies are removed.
+- Three.js renders a clearly labelled four-court schematic with nets, acrylic surfaces, fencing, shadows and floodlights. Customers can change between overview, overhead and court-level cameras, daylight and floodlit lighting, and all four courts. Selection resolves real court IDs from the public API and carries into booking; the model makes no live availability claim.
+- Rendering stops when the camera settles, when offscreen and when the tab is hidden. Pixel density is capped, reduced-motion preferences disable interpolation/parallax, and unavailable WebGL falls back to academy photography. Camera and lighting controls support keyboard interaction.
+- Browser verification at 1280px desktop and 375px mobile found no horizontal overflow. The real WebGL canvas rendered; camera/day/night controls worked; selecting Court 4 carried its verified ID into booking and Court 4 was selected there. No customer reservation or payment was created during visual QA.
+- Verification: lint, TypeScript, all 122 unit tests, production build and production dependency audit pass. Browser warnings prompted corrections to the supported Three.js shadow mode, Next.js scroll-behavior metadata and eager hero image loading. CI and deployment status are recorded by the resulting Git revision.
+- Only the lead worked on this revision; no additional heavy agents or paid services were used. `RECRUITER_PREP.md` remains untouched. Payment readiness remains unchanged as documented above.
+
 ## Cinematic frontend upgrade — October 4
 
 - Added a custom dimensional court, paddle and pickleball hero. Remotion Player runs a frame-driven eight-second scene; Framer Motion provides pointer parallax and scroll-linked camera movement. The scene pauses outside the viewport, in background tabs, or through its accessible pause control. Reduced-motion preference uses a static scene and disables camera movement.

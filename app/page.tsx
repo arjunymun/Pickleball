@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/academy/site-header";
 import { SiteFooter } from "@/components/academy/site-footer";
-import { CourtExperience } from "@/components/academy/court-experience";
+import { CourtExplorer } from "@/components/academy/court-explorer";
 import { ACADEMY, formatMoney } from "@/lib/academy/config";
 import {
   bookingDates,
@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 export default function HomePage() {
   const dates = bookingDates();
   return (
-    <>
+    <div className={styles.home}>
       <SiteHeader />
       <main id="main-content">
         <section className={styles.hero} aria-labelledby="home-heading">
@@ -36,14 +36,13 @@ export default function HomePage() {
                 <MapPin size={16} /> GMS Road, Dehradun
               </p>
               <h1 id="home-heading">
-                Meet you
+                Step out.
                 <br />
-                on court.
+                <span>Play on.</span>
               </h1>
               <p className={styles.heroDescription}>
-                A little competition. A lot of good company.
-                <br />
-                Your next game starts at Doon.
+                Four blue courts. The Dehradun sky.
+                <br />A game worth stepping outside for.
               </p>
               <div className={styles.heroActions}>
                 <Link href="/book" className={styles.heroButton}>
@@ -54,15 +53,12 @@ export default function HomePage() {
                 </a>
               </div>
               <div className={styles.heroNote}>
-                <span /> Four outdoor courts, open every day
+                <span /> From the first serve to the floodlit finish.
               </div>
             </div>
-            <div className={styles.heroArt}>
-              <CourtExperience />
-            </div>
           </div>
-          <div className={styles.heroWordmark} aria-hidden="true">
-            PLAY A LITTLE MORE.
+          <div className={`academy-container ${styles.heroArt}`}>
+            <CourtExplorer />
           </div>
         </section>
         <div className={`academy-container ${styles.finderWrap}`}>
@@ -313,6 +309,6 @@ export default function HomePage() {
         </section>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

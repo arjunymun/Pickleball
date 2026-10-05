@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en-IN">
+    <html lang="en-IN" data-scroll-behavior="smooth">
       <body className={`${sans.variable} ${display.variable} antialiased`}>
         <a className="academy-skip-link" href="#main-content">Skip to content</a>
         {children}
