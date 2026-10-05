@@ -31,10 +31,10 @@ export default function PrivacyPage() {
           <h2 className="academy-heading">Payments &amp; service providers</h2>
           <p>
             Supabase supports sign-in and stores account and academy records.
-            Razorpay handles online payments and recurring membership billing.
-            Payment details entered in Razorpay checkout are processed by
-            Razorpay; the academy website stores payment references and
-            statuses.
+            Online checkout is currently unavailable. If you arrange payment
+            with staff, the academy records the amount, payment status and
+            reference needed to manage your booking. This website does not
+            collect card or bank-account details.
           </p>
           <p>
             Google sign-in shares the identity information needed to create your

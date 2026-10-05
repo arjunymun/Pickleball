@@ -2,6 +2,13 @@
 
 Last updated: October 4, 2026 (America/Denver). The full approved scope remains in `plan.md`. The site, auth, staff inventory and schedulers now work on the existing Vercel production URL. Payment collection remains unverified.
 
+## Payment direction — October 4
+
+- The owner reports an existing PhonePe merchant account but cannot identify its login and now prefers a QR-based interim collection flow. A phone number is not a verified UPI address and cannot safely generate a payable QR. No merchant QR image or verified UPI ID exists in this repository. The owner has been asked for either one; do not infer a UPI handle from a phone number.
+- The existing Razorpay integration stays disabled. PhonePe V2 APIs were researched from official docs, but no merchant credentials, account-specific fee terms, or AutoPay entitlement were verified. A partial PhonePe adapter was intentionally discarded after the owner changed direction; no untested provider code remains.
+- Until a verified payment destination and staff confirmation workflow exist, the hosted booking review now says its ten-minute hold is not confirmed, and directs the customer to call the academy. The privacy notice accurately says that online checkout is unavailable. Staff can create a phone reservation and record an externally received payment; that is a staff action, not automatic online settlement.
+- QR/manual UPI cannot satisfy the approved automatic monthly membership rule by itself. Keep membership checkout unavailable until a recurring provider is verified, or obtain an explicit business-rule change for manual monthly renewal. Never mark a QR payment paid based solely on a customer-submitted screenshot/reference.
+
 ## Latest verified checkpoint
 
 - October 4 deployment: the owner explicitly authorized pushing genuine commits and updating the existing live site. `main` through `7601af4` was pushed to `arjunymun/Pickleball`; Vercel production deployment `dpl_CMFbwqANWf3WXZVnDCjSfoyf1sZW` is Ready and aliased at `https://pickleball-xi.vercel.app`. GitHub Actions run `37236293386` passed. Production environment now uses the dedicated academy Supabase project and enables backend and email auth; service-role key and cron token are private Vercel secrets. No charge, paid plan or payment mode was enabled.

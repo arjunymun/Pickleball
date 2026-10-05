@@ -233,7 +233,18 @@ export function BookingReview({ bookingId }: { bookingId: string | null }) {
               collected.
             </p>
           )}
-          {held && !verificationPending ? (
+          {held && !verificationPending && account.data?.paymentMode === "unconfigured" ? (
+            <>
+              <p className={styles.notice}>
+                Your court is held for ten minutes, but it is not booked yet.
+                Call the academy to arrange payment and have staff confirm your
+                reservation before the hold expires.
+              </p>
+              <a className={`academy-button ${styles.fullButton}`} href={ACADEMY.phoneHref}>
+                Call {ACADEMY.phone} to confirm
+              </a>
+            </>
+          ) : held && !verificationPending ? (
             <>
               <p className={styles.small}>
                 <LockKeyhole size={14} /> Pay securely with Razorpay. Available
