@@ -913,3 +913,339 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* Customer booking and account polish */
+.page {
+  padding-top: clamp(30px, 4vw, 54px);
+}
+.breadcrumb {
+  letter-spacing: 0.01em;
+}
+.intro {
+  font-size: 16px;
+  line-height: 1.7;
+}
+.bookingFilters {
+  padding: clamp(18px, 2.5vw, 28px);
+  gap: 20px;
+  border: 1px solid rgba(30, 70, 120, 0.09);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #f5f9ff 0%, #edf4fc 100%);
+  box-shadow: 0 12px 34px rgba(24, 55, 91, 0.07), inset 0 1px 0 rgba(255,255,255,.9);
+}
+.field {
+  gap: 9px;
+  color: #17365f;
+  font-size: 14px;
+}
+.field select,
+.field input {
+  min-height: 48px;
+  padding-inline: 13px;
+  border: 1px solid #c8d7e9;
+  border-radius: 11px;
+  background-color: #fff;
+  color: #142b49;
+}
+.field select:focus-visible,
+.field input:focus-visible,
+.court:focus-visible,
+.accountNav a:focus-visible,
+.bookingItem > a:focus-visible,
+.priceCard:focus-visible,
+.signout:focus-visible {
+  outline: 3px solid #4a91e8;
+  outline-offset: 3px;
+}
+.duration {
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  color: #334b68;
+}
+.bookingLayout {
+  gap: clamp(20px, 2.5vw, 30px);
+}
+.courtMap {
+  padding: clamp(18px, 2.5vw, 28px);
+  gap: clamp(16px, 2vw, 24px);
+  border: 10px solid #6d8d81;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #315f54 0%, #244d47 100%);
+  box-shadow: 0 18px 42px rgba(20, 49, 53, 0.18), inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.court {
+  min-height: 190px;
+  border-radius: 12px;
+  border-width: 2px;
+  background-color: #347fb4;
+  box-shadow: 0 8px 18px rgba(5, 28, 54, 0.2), inset 0 1px 0 rgba(255,255,255,.25);
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+.court:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(5, 28, 54, 0.26), inset 0 1px 0 rgba(255,255,255,.28);
+}
+.court.selected {
+  background-color: #155ca3;
+  outline: 3px solid #c7e8ff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 7px rgba(8, 46, 91, .32), 0 12px 25px rgba(5, 28, 54, .28);
+}
+.court:disabled {
+  border-color: rgba(255,255,255,.65);
+  box-shadow: inset 0 0 0 1px rgba(10, 32, 52, .15);
+}
+.courtLabel {
+  min-width: 112px;
+  padding: 10px 13px;
+  border-radius: 9px;
+  background: #102f53;
+  box-shadow: 0 5px 14px rgba(3, 20, 41, .25);
+}
+.mapNote {
+  line-height: 1.55;
+}
+.legend {
+  gap: 16px 24px;
+  line-height: 1.5;
+}
+.review {
+  padding: clamp(22px, 2.5vw, 30px);
+  border-color: #d7e2ef;
+  border-radius: 20px;
+  background: linear-gradient(155deg, #fff 0%, #f8fbff 100%);
+  box-shadow: 0 18px 44px rgba(22, 54, 91, 0.1), 0 2px 7px rgba(22, 54, 91, 0.04);
+}
+.review h2 {
+  font-size: clamp(30px, 3vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+.details {
+  gap: 15px;
+}
+.details > div {
+  line-height: 1.6;
+}
+.total {
+  padding-top: 18px;
+  color: #193c66;
+}
+.total strong {
+  color: #102d50;
+}
+.fullButton {
+  min-height: 50px;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(24, 82, 145, 0.2);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.fullButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 11px 22px rgba(24, 82, 145, 0.25);
+}
+.memberNote,
+.reviewAside {
+  border: 1px solid #dce7f3;
+  border-radius: 12px;
+  color: #334b68;
+}
+.memberNote {
+  line-height: 1.55;
+}
+.error {
+  border-left-width: 4px;
+  border-radius: 0 12px 12px 0;
+}
+.empty {
+  padding: clamp(24px, 3vw, 36px);
+  border-color: #d8e4f1;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #f6faff, #edf4fb);
+  box-shadow: inset 0 1px 0 #fff;
+}
+.empty h2 {
+  color: #183a63;
+  line-height: 1.15;
+}
+.loading {
+  padding: 48px 20px;
+  border-color: #d8e4f1;
+  border-radius: 18px;
+  background: #f7faff;
+}
+.reviewLayout {
+  gap: clamp(22px, 3vw, 34px);
+}
+.reviewPhoto,
+.membershipPhoto {
+  border-radius: 18px;
+  box-shadow: 0 16px 38px rgba(18, 48, 81, .14);
+}
+.reviewAside {
+  padding: 22px;
+  background: linear-gradient(145deg, #f2f7fd, #e9f1fa);
+  box-shadow: inset 0 1px 0 #fff;
+}
+.holdTimer {
+  min-height: 46px;
+  padding: 12px 15px;
+  border: 1px solid #f0df9b;
+  border-radius: 10px;
+  color: #5b4a1b;
+}
+.accountTop {
+  margin-bottom: 32px;
+}
+.accountNav {
+  gap: 10px 22px;
+  padding: 16px 0;
+}
+.accountNav a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border-radius: 8px;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.bookingItem {
+  padding: 22px;
+  border-color: #d8e3ef;
+  border-radius: 16px;
+  background: linear-gradient(150deg, #fff, #f9fbfe);
+  box-shadow: 0 8px 24px rgba(22, 54, 91, .065);
+}
+.bookingItem > a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 9px;
+  background: #edf5ff;
+  font-weight: 650;
+  text-decoration: none;
+}
+.bookingItem > a:hover {
+  background: #e0efff;
+}
+.badge {
+  padding: 6px 10px;
+  border: 1px solid #dce7f3;
+  border-radius: 8px;
+  color: #234e7e;
+  background: #f0f6fd;
+  font-size: 12px;
+}
+.membershipLayout {
+  gap: clamp(28px, 4vw, 54px);
+}
+.membershipPrice {
+  color: #12375f;
+}
+.benefits {
+  gap: 17px;
+}
+.benefits li {
+  line-height: 1.65;
+}
+.authLayout {
+  border-color: #d7e2ef;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 24px 64px rgba(19, 49, 82, .13), 0 3px 10px rgba(19, 49, 82, .04);
+}
+.authPhoto {
+  background: #1c4268;
+}
+.authForm {
+  padding: clamp(32px, 5vw, 58px);
+}
+.authForm h1 {
+  color: #15385f;
+  letter-spacing: -0.03em;
+}
+.authForm form {
+  gap: 20px;
+}
+.authForm form input {
+  min-height: 48px;
+  border-radius: 10px;
+}
+.authForm form button,
+.googleButton {
+  min-height: 48px;
+  border-radius: 11px;
+}
+.notice {
+  border: 1px solid #dce7f3;
+  border-radius: 11px;
+  background: #f2f7fd;
+}
+.signout {
+  min-height: 44px;
+  border-radius: 8px;
+}
+.signout:hover {
+  background: #f1f6fc;
+  color: #173d69;
+}
+@media (max-width: 700px) {
+  .bookingFilters {
+    padding: 16px;
+    gap: 14px;
+    border-radius: 15px;
+  }
+  .bookingLayout,
+  .reviewLayout,
+  .accountGrid,
+  .membershipLayout {
+    gap: 20px;
+  }
+  .courtMap {
+    padding: 14px;
+    gap: 14px;
+    border-width: 7px;
+    border-radius: 16px;
+  }
+  .court {
+    min-height: 148px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+  .courtLabel {
+    min-width: 0;
+    max-width: 100%;
+    padding: 8px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  .review {
+    padding: 22px;
+    border-radius: 17px;
+  }
+  .reviewAside {
+    display: block;
+  }
+  .accountNav {
+    gap: 8px 12px;
+  }
+  .bookingItem {
+    padding: 18px;
+    border-radius: 14px;
+  }
+  .authLayout {
+    border-radius: 17px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .court,
+  .fullButton {
+    transition: none;
+  }
+  .court:not(:disabled):hover,
+  .fullButton:hover {
+    transform: none;
+  }
+}

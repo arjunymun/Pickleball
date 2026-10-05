@@ -36,6 +36,7 @@ a { color: inherit; text-decoration: none; }
 img { max-width: 100%; }
 ::selection { color: var(--academy-ink); background: #ede330; }
 :focus-visible { outline: 3px solid var(--academy-blue); outline-offset: 4px; }
+.academy-footer :focus-visible { outline-color:#e4f05e; }
 [id] { scroll-margin-top: 95px; }
 .academy-container { width: min(1280px, calc(100% - 80px)); margin-inline: auto; }
 .academy-heading, .display-font { font-family: var(--font-display), Impact, sans-serif; font-weight: 700; line-height: .98; letter-spacing: -.025em; }
@@ -60,18 +61,21 @@ textarea.academy-input { min-height: 100px; resize: vertical; }
 .academy-brand__words { display: grid; font-family: var(--font-display), Impact, sans-serif; font-weight: 700; line-height: 1; text-transform: uppercase; }
 .academy-brand__name { font-size: 34px; letter-spacing: .01em; }
 .academy-brand__sub { margin-top: 3px; font-size: 13px; letter-spacing: .025em; }
-.academy-header { border-bottom: 1px solid var(--academy-line); background: #fff; }
+.academy-header { position:sticky; top:0; z-index:40; border-bottom:1px solid #dce4eea6; background:#ffffffed; backdrop-filter:blur(18px); }
 .academy-header__inner { min-height: 94px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
 .academy-header__nav { display: flex; align-items: center; gap: 34px; font-size: 16px; font-weight: 550; }
 .academy-header__nav a:hover { color: var(--academy-blue); }
 .academy-header__actions { display: flex; gap: 12px; align-items: center; }
-.academy-footer { margin-top: 70px; border-top: 1px solid var(--academy-line); padding: 32px 0 24px; }
+.academy-footer { margin-top:70px; padding:52px 0 27px; background:#092752; color:#f0f6ff; }
+.academy-footer__invite { display:flex; align-items:center; justify-content:space-between; gap:25px; padding-bottom:42px; margin-bottom:35px; border-bottom:1px solid #ffffff20; }
+.academy-footer__invite h2 { font-family:var(--font-display),Impact,sans-serif; font-size:48px; font-weight:600; letter-spacing:-.015em; line-height:1; margin:0; }
+.academy-footer__invite .academy-button { background:#e4f05e; color:#102b50; box-shadow:0 3px 0 #b8c647; }
 .academy-footer__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 32px; }
-.academy-footer__contact { display: grid; gap: 4px; font-size: 15px; color: var(--academy-muted); }
-.academy-footer__contact a { color: var(--academy-ink); }
-.academy-footer__links { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; font-size: 14px; color: var(--academy-muted); }
-.academy-footer__links a:hover { color: var(--academy-blue); text-decoration: underline; }
-.academy-footer__bottom { margin-top: 30px; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; color: var(--academy-muted); }
+.academy-footer__contact { display:grid; gap:5px; font-size:15px; color:#bcd0e8; }
+.academy-footer__contact strong { color:white; font-size:17px; }.academy-footer__contact a { color:#eef5ff; }
+.academy-footer__links { display:flex; flex-wrap:wrap; align-items:center; gap:22px; font-size:14px; color:#c3d4ec; }
+.academy-footer__links a { display:inline-flex; align-items:center; min-height:44px; }.academy-footer__links a:hover { color:white; text-decoration:underline; }
+.academy-footer__bottom { margin-top:30px; display:flex; justify-content:space-between; gap:16px; font-size:13px; color:#a9bfdc; }
 .academy-empty { padding: 40px 24px; text-align: center; border: 1px solid var(--academy-line); border-radius: 10px; }
 .academy-empty h2 { font-family: var(--font-display), Impact, sans-serif; font-size: 36px; margin: 0 0 12px; }
 .academy-empty p { color: var(--academy-muted); margin: 0 auto 20px; max-width: 540px; }
@@ -81,12 +85,22 @@ textarea.academy-input { min-height: 100px; resize: vertical; }
 .mono-detail { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
 .soft-divider { border-top: 1px solid var(--academy-line); }
 
+.academy-button,.academy-button-secondary { border-radius:11px; transition:transform .22s cubic-bezier(.16,1,.3,1),background .22s,box-shadow .22s,border-color .22s; }
+.academy-button { box-shadow:0 3px 0 #0443ac,0 7px 16px #075bea16; }
+.academy-button:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 5px 0 #0443ac,0 10px 22px #075bea22; }
+.academy-button:active:not(:disabled) { transform:translateY(2px); box-shadow:0 1px 0 #0443ac; }
+.academy-input { transition:border-color .2s,box-shadow .2s; }.academy-input:focus { border-color:#075bea; box-shadow:0 0 0 3px #075bea14; }
+.academy-header__nav a { position:relative; min-height:44px; display:inline-flex; align-items:center; }
+.academy-header__nav a::after { content:""; position:absolute; left:0; right:0; bottom:4px; height:2px; background:var(--academy-blue); transform:scaleX(0); transform-origin:left; transition:transform .25s cubic-bezier(.16,1,.3,1); }.academy-header__nav a:hover::after { transform:scaleX(1); }
+
 @media (max-width: 1000px) {
   .academy-container { width: calc(100% - 48px); }
   .academy-header__nav { gap: 20px; }
   .academy-header__actions .academy-button-secondary { display: none; }
 }
 @media (max-width: 700px) {
+  html { scroll-padding-top: 140px; }
+  [id] { scroll-margin-top: 140px; }
   .academy-container { width: calc(100% - 36px); }
   .academy-header__inner { min-height: 80px; gap: 12px; flex-wrap: wrap; padding-block: 14px; }
   .academy-brand__ball { width: 34px; height: 34px; }
@@ -95,6 +109,7 @@ textarea.academy-input { min-height: 100px; resize: vertical; }
   .academy-header__nav { order: 3; width: 100%; justify-content: space-between; gap: 10px; font-size: 14px; }
   .academy-header__actions .academy-button { min-height: 40px; padding: 10px 14px; font-size: 14px; }
   .academy-footer { margin-top: 44px; }
+  .academy-footer__invite { flex-direction:column; align-items:flex-start; gap:23px; padding-bottom:30px; }.academy-footer__invite h2 { font-size:39px; }
   .academy-footer__top, .academy-footer__bottom { flex-direction: column; }
   .academy-footer__links { gap: 16px 20px; }
   .academy-card { padding: 20px; }
