@@ -79,8 +79,8 @@ export function SignInPanel({
     <div className={styles.authLayout}>
       <div className={styles.authPhoto}>
         <Image
-          src={ACADEMY.photos.daylight}
-          alt="A sunny day on the academy's outdoor courts"
+          src={ACADEMY.photos.courts}
+          alt="The academy's outdoor blue courts under floodlights"
           fill
           priority
           sizes="50vw"

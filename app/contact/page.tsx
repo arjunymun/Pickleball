@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { SiteHeader } from "@/components/academy/site-header";
 import { SiteFooter } from "@/components/academy/site-footer";
+import { VenueMap } from "@/components/academy/venue-map";
 import { ACADEMY } from "@/lib/academy/config";
 import styles from "@/components/customer/academy-customer.module.css";
 
@@ -14,8 +15,8 @@ export default function ContactPage() {
           <h1 className="academy-heading">See you on court.</h1>
           <div className={styles.venuePhoto}>
             <Image
-              src={ACADEMY.photos.reverse}
-              alt="The academy's four outdoor pickleball courts in Dehradun"
+              src={ACADEMY.photos.courts}
+              alt="The academy's blue outdoor courts illuminated by floodlights at night"
               fill
               sizes="(max-width:700px) 100vw, 740px"
             />
@@ -39,6 +40,7 @@ export default function ContactPage() {
               Call {ACADEMY.phone}
             </a>
           </div>
+          <VenueMap />
           <h2 className="academy-heading">
             Bookings, cancellations &amp; questions
           </h2>

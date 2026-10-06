@@ -2,6 +2,12 @@
 
 Last updated: October 6, 2026 (America/Denver). The full approved scope remains in `plan.md`. The site, auth, staff inventory and schedulers now work on the existing Vercel production URL. Payment collection remains unverified.
 
+## Owner photo and interactive map — October 6
+
+- Replaced the wall-heavy daytime photos on the homepage, Contact, sign-in and booking review with the exact owner-supplied District night-court attachment. The court explorer's photographic fallback uses it too, with truthful lighting labels. Source and original dimensions are recorded in `assets.md`.
+- Added the academy's exact Google Maps Share → Embed a map iframe to the homepage visit area and Contact page. No API keys, billing accounts or new dependencies; lazy loading and external directions links remain available. The privacy notice describes the Google connection. Owner-provided hours and contact number remain authoritative.
+- Desktop and 375px mobile rendering were checked without horizontal overflow. The real academy pin renders; mobile camera controls zoom from level 16 to 17, and the map view switch works. Browser console has no captured warnings/errors. Lint, TypeScript, all 138 tests, scoped formatting and production build pass. The resulting Git revision carries CI and Vercel delivery evidence. Payment readiness is unchanged; preserve `RECRUITER_PREP.md`.
+
 ## Visitor experience audit — October 6
 
 - Owner requested a customer-perspective audit excluding payment activation, with the sole gpt-6.1-sol lead orchestrating two bounded gpt-6-luna specialists (customer and admin). No child agents or extra heavy models were used. Ownership, findings and verification are recorded in `visitor-audit.md`, requested open in the Codex right panel.

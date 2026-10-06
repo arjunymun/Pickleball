@@ -186,7 +186,7 @@ export function BookingReview({ bookingId }: { bookingId: string | null }) {
           </h1>
           <div className={styles.reviewPhoto}>
             <Image
-              src={ACADEMY.photos.daylight}
+              src={ACADEMY.photos.courts}
               alt="Outdoor blue pickleball courts at the academy"
               fill
               sizes="(max-width: 700px) 100vw, 420px"
@@ -235,14 +235,19 @@ export function BookingReview({ bookingId }: { bookingId: string | null }) {
               collected.
             </p>
           )}
-          {held && !verificationPending && account.data?.paymentMode === "unconfigured" ? (
+          {held &&
+          !verificationPending &&
+          account.data?.paymentMode === "unconfigured" ? (
             <>
               <p className={styles.notice}>
                 Your court is held for ten minutes, but it is not booked yet.
                 Call the academy to arrange payment and have staff confirm your
                 reservation before the hold expires.
               </p>
-              <a className={`academy-button ${styles.fullButton}`} href={ACADEMY.phoneHref}>
+              <a
+                className={`academy-button ${styles.fullButton}`}
+                href={ACADEMY.phoneHref}
+              >
                 Call {ACADEMY.phone} to confirm
               </a>
             </>

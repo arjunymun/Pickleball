@@ -12,6 +12,7 @@ import {
 import { SiteHeader } from "@/components/academy/site-header";
 import { SiteFooter } from "@/components/academy/site-footer";
 import { CourtExplorer } from "@/components/academy/court-explorer";
+import { VenueMap } from "@/components/academy/venue-map";
 import { ACADEMY, formatMoney } from "@/lib/academy/config";
 import {
   bookingDates,
@@ -134,8 +135,8 @@ export default function HomePage() {
           </div>
           <div className={styles.venuePhoto}>
             <Image
-              src={ACADEMY.photos.daylight}
-              alt="The four blue outdoor courts at Doon Pickleball Academy surrounded by Dehradun greenery"
+              src={ACADEMY.photos.courts}
+              alt="Blue outdoor courts at Doon Pickleball Academy illuminated by floodlights at night"
               fill
               sizes="(max-width:700px) 100vw, 90vw"
             />
@@ -364,6 +365,9 @@ export default function HomePage() {
             <span>Open every day, 6 AM – midnight</span>
           </div>
         </section>
+        <div className="academy-container">
+          <VenueMap />
+        </div>
       </main>
       <SiteFooter />
     </div>

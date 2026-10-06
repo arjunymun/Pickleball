@@ -42,6 +42,11 @@ export default function PrivacyPage() {
           </p>
           <h2 className="academy-heading">Access &amp; cookies</h2>
           <p>
+            Embedded Google Maps help you locate the academy. Loading a map
+            connects your browser to Google. You can also open directions
+            directly in Google Maps.
+          </p>
+          <p>
             Sign-in cookies maintain your session. Authorized academy staff can
             access the customer information needed to run court bookings,
             payments and membership visits. Your booking history is available

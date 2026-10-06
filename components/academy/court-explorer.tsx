@@ -47,7 +47,7 @@ export function CourtExplorer() {
       <div className={styles.stage} data-ready={ready && !unavailable}>
         <div className={styles.poster}>
           <Image
-            src={night ? ACADEMY.photos.evening : ACADEMY.photos.daylight}
+            src={ACADEMY.photos.courts}
             alt="Doon Pickleball Academy outdoor courts"
             fill
             sizes="100vw"
@@ -65,7 +65,11 @@ export function CourtExplorer() {
           />
         )}
         <div className={styles.stageLabel}>
-          <span>{night ? "Under the lights" : "In the daylight"}</span>
+          <span>
+            {!ready || unavailable || night
+              ? "Under the lights"
+              : "In the daylight"}
+          </span>
           <strong>
             {view === "courtside" ? `Court 0${court + 1}` : "Room to play."}
           </strong>
