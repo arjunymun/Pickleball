@@ -7,7 +7,7 @@ import type { AcademyBlock, AcademyBooking, AdminSchedulePayload } from "@/lib/a
 import { addDays, formatCourtDate, formatCourtTime, indiaDate, isValidDate } from "@/lib/academy/time";
 import { BookingEntry, BlockEntry } from "./operations-entry";
 import { OperationsDialog } from "./operations-dialog";
-import { displayStatus, parseRupees, requestKey, sourceLabels } from "./operations-utils";
+import { displayStatus, firstAvailableEntrySlot, parseRupees, requestKey, sourceLabels } from "./operations-utils";
 import styles from "./operations.module.css";
 import { CourtTimeline } from "./court-timeline";
 
@@ -40,13 +40,18 @@ export function AcademyOperations() {
     void refresh();
     return () => { requestVersion.current += 1; };
   }, [refresh]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const visible = payload?.date === date ? payload : null;
   const courts = visible?.courts.filter((court) => courtFilter === "all" || court.id === courtFilter) ?? [];
+  const entrySlot = visible ? firstAvailableEntrySlot(visible, date, courtFilter, clock) : null;
   const changeDate = (next: string) => { if (isValidDate(next)) { setDate(next); setSelection(null); setNotice(""); } };
   async function saved(message: string) { setSelection(null); setNotice(message); await refresh(); }
 
   return <>
-    <div className={styles.pageHeading}><div><p className="academy-eyebrow">Front desk · Asia/Kolkata</p><h1>The court board.</h1><p>Four courts. One hour at a time. Every reservation in one place.</p></div><div className={styles.actions}><button className="academy-button-secondary" type="button" onClick={() => void refresh()} disabled={loading}>Refresh</button><button className="academy-button" type="button" disabled={!visible || loading || Boolean(error)} onClick={() => setSelection({ kind: "entry", courtId: visible!.courts[0]?.id ?? "", hour: 6 })}>Add reservation</button></div></div>
+    <div className={styles.pageHeading}><div><p className="academy-eyebrow">Front desk · Asia/Kolkata</p><h1>The court board.</h1><p>Four courts. One hour at a time. Every reservation in one place.</p></div><div className={styles.actions}><button className="academy-button-secondary" type="button" onClick={() => void refresh()} disabled={loading}>Refresh</button><button className="academy-button" type="button" disabled={!visible || loading || Boolean(error) || !entrySlot} onClick={() => { if (entrySlot) setSelection({ kind: "entry", ...entrySlot }); }}>{entrySlot ? "Add reservation" : "No open court time"}</button></div></div>
     {notice && <p className={styles.success} role="status">{notice}</p>}
     {error && <div className="academy-alert" role="alert"><strong>Schedule unavailable.</strong> {error} <button type="button" onClick={() => void refresh()} disabled={loading}>Retry</button><p>Shown reservations may be out of date. Actions stay locked until refreshed.</p></div>}
     <section className={styles.metrics} aria-label="Selected day totals">{[

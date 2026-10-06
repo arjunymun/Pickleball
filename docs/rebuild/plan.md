@@ -2,6 +2,10 @@
 
 Approved October 2, 2026. Build all credential-independent work before asking the owner for final setup inputs. Owner update October 4: local milestone commits are now authorized, but all commit dates must be truthful and no changes may be pushed without a separate request. Preserve the pre-existing untracked `RECRUITER_PREP.md`.
 
+## Visitor audit extension — October 6, 2026
+
+Owner requested a first-time visitor audit excluding payment activation, with a lead acting as orchestrator and lighter specialists implementing customer and admin fixes. This is part of the existing rebuild goal. Keep one gpt-6.1-sol lead and narrowly scoped gpt-6-luna workers with separate file ownership. Record prioritized findings, assignments, fixes and evidence in `visitor-audit.md`, open it in the side panel and update it at checkpoints. Verify actual desktop/mobile journeys, preserve real booking intent and staff operational context, then run relevant regressions, lint, TypeScript and build before authorized genuine Git/Vercel delivery. Do not create live bookings or mutate customer/staff records for the audit. Payment-provider verification remains an independent completion requirement.
+
 ## Product
 
 Real academy in GMS Road, Dehradun. Four outdoor courts, 06:00–24:00 Asia/Kolkata, one-hour reservations, rolling 14-day booking window. INR500 per court-hour; INR400 for an active, paid member. INR125 per person-hour is in-person individual play only. INR2500 automatically renewed monthly membership includes one individual hour daily, recorded by staff, with no banked credits or free court booking. Court cancellation by calling +91 97980 98421; staff records reason and no/full/partial refund. Payment contact is separate and must not be published as club contact.

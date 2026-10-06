@@ -107,7 +107,7 @@ export function CustomerAccount({
                     <p>
                       {formatCourtDate(booking.startsAt, { weekday: "long" })} ·{" "}
                       {formatCourtTime(booking.startsAt)} –{" "}
-                      {formatCourtTime(booking.endsAt)}
+                      {formatCourtTime(booking.endsAt)} · IST
                     </p>
                     <p>
                       {formatMoney(booking.amountPaise)} · payment{" "}
@@ -125,7 +125,9 @@ export function CustomerAccount({
                     }
                   >
                     {booking.status === "held"
-                      ? "Continue to payment"
+                      ? data.paymentMode === "unconfigured"
+                        ? "Review booking hold"
+                        : "Continue to payment"
                       : "View booking"}
                   </Link>
                 </article>

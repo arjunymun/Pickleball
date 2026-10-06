@@ -170,7 +170,9 @@ export function BookingReview({ bookingId }: { bookingId: string | null }) {
             Almost game time.
           </h2>
           <p className={styles.intro}>
-            Your court is held while you finish checkout.
+            {account.data?.paymentMode === "unconfigured"
+              ? "This is a temporary hold, not a confirmed booking. Online checkout is unavailable."
+              : "Your court is held temporarily while you finish checkout. Payment must clear to confirm the booking."}
           </p>
           <p className={styles.small}>
             Need to cancel after booking? Call the academy. Our team handles
@@ -217,7 +219,7 @@ export function BookingReview({ bookingId }: { bookingId: string | null }) {
             <div>
               <Clock3 size={20} />
               {formatCourtTime(booking.startsAt)} –{" "}
-              {formatCourtTime(booking.endsAt)}
+              {formatCourtTime(booking.endsAt)} · IST
             </div>
             <div>
               <Hourglass size={20} />1 hour · up to 4 players

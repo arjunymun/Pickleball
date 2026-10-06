@@ -1,5 +1,5 @@
 import { ACADEMY } from "@/lib/academy/config";
-import type { AcademyMembership, BookingSource } from "@/lib/academy/contracts";
+import type { AcademyMembership, AdminSchedulePayload, BookingSource } from "@/lib/academy/contracts";
 import { addDays, slotStart } from "@/lib/academy/time";
 
 export const sourceLabels: Record<BookingSource, string> = { online: "Online", walk_in: "Walk-in", phone: "Phone", playo: "Playo", hudle: "Hudle", district: "District", individual_play: "Individual play" };
@@ -12,6 +12,20 @@ export function parseRupees(value: string): number {
   return amount;
 }
 export function hourEnd(date: string, hour: number): string { return hour === ACADEMY.closingHour ? slotStart(addDays(date, 1), 0) : slotStart(date, hour); }
+export function firstAvailableEntrySlot(payload: AdminSchedulePayload, date: string, courtFilter: string, now: number): { courtId: string; hour: number } | null {
+  const courts = payload.courts.filter((court) => courtFilter === "all" || court.id === courtFilter);
+  for (let hour = ACADEMY.openingHour; hour < ACADEMY.closingHour; hour += 1) {
+    const start = Date.parse(slotStart(date, hour));
+    const end = start + 3_600_000;
+    if (end <= now) continue;
+    for (const court of courts) {
+      const booked = payload.bookings.some((booking) => booking.courtId === court.id && ["held", "confirmed", "checked_in", "completed", "no_show"].includes(booking.status) && Date.parse(booking.startsAt) < end && Date.parse(booking.endsAt) > start);
+      const blocked = payload.blocks.some((block) => block.courtId === court.id && Date.parse(block.startsAt) < end && Date.parse(block.endsAt) > start);
+      if (!booked && !blocked) return { courtId: court.id, hour };
+    }
+  }
+  return null;
+}
 export function paidMember(membership: AcademyMembership | null, startsAt = new Date().toISOString()): boolean {
   return Boolean(membership?.status === "active" && membership.paidThrough && membership.currentPeriodStart && new Date(membership.currentPeriodStart).getTime() <= new Date(startsAt).getTime() && new Date(membership.paidThrough).getTime() > new Date(startsAt).getTime());
 }

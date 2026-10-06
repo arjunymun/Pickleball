@@ -71,7 +71,7 @@ export default function HomePage() {
               <LayoutGrid size={24} />
               <div>
                 <strong>Make time for a game.</strong>
-                <span>One hour. Your court. Your crew.</span>
+                <span>One hour. Your court. Your crew. Times in IST.</span>
               </div>
             </div>
             <label>
@@ -138,7 +138,6 @@ export default function HomePage() {
               alt="The four blue outdoor courts at Doon Pickleball Academy surrounded by Dehradun greenery"
               fill
               sizes="(max-width:700px) 100vw, 90vw"
-              priority
             />
             <div className={styles.photoBottom}>
               <span>
@@ -278,6 +277,64 @@ export default function HomePage() {
             <Link href="/book" className="academy-button">
               Plan your next game <ArrowUpRight size={18} />
             </Link>
+          </div>
+        </section>
+        <section
+          className={`academy-container ${styles.questions}`}
+          aria-labelledby="questions-heading"
+        >
+          <div className={styles.sectionIntro}>
+            <h2 id="questions-heading">Before your first game.</h2>
+            <p>
+              A few practical answers, so you know what you’re booking and what
+              to check before you visit.
+            </p>
+          </div>
+          <div className={styles.questionList}>
+            <details>
+              <summary>Is the court price per person?</summary>
+              <p>
+                No. {formatMoney(ACADEMY.courtPricePaise)} reserves a whole
+                court for your group for one hour. An active paid member pays{" "}
+                {formatMoney(ACADEMY.memberCourtPricePaise)}. Individual play is{" "}
+                {formatMoney(ACADEMY.individualPricePaise)} per person per hour
+                and is arranged in person.
+              </p>
+            </details>
+            <details>
+              <summary>Can I come without a group?</summary>
+              <p>
+                Call <a href={ACADEMY.phoneHref}>{ACADEMY.phone}</a> to check
+                individual-play space before you visit. Individual play is
+                arranged at the academy, subject to court space.
+              </p>
+            </details>
+            <details>
+              <summary>Does membership include a free whole court?</summary>
+              <p>
+                Membership includes one hour of individual play each day,
+                recorded by staff. It does not include a free private court or
+                unused hours carried into another day.{" "}
+                <Link href="/membership">See membership details</Link>.
+              </p>
+            </details>
+            <details>
+              <summary>How do I change or cancel a booking?</summary>
+              <p>
+                Call the academy with your booking reference. Staff handle
+                cancellation requests and determine any refund.{" "}
+                <Link href="/terms">Read the booking terms</Link>.
+              </p>
+            </details>
+            <details>
+              <summary>What should I check before my first visit?</summary>
+              <p>
+                These are outdoor courts. Ask staff about weather-related
+                arrangements, equipment and any beginner support before
+                travelling. Call <a href={ACADEMY.phoneHref}>{ACADEMY.phone}</a>{" "}
+                for current details.
+              </p>
+            </details>
           </div>
         </section>
         <section id="visit" className={`academy-container ${styles.visit}`}>

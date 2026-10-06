@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Clock3, Hourglass, LayoutGrid } from "lucide-react";
@@ -20,56 +20,125 @@ import {
   formatCourtDate,
   formatCourtTime,
   hourInIndia,
+  indiaDate,
   slotStart,
 } from "@/lib/academy/time";
 import { useCustomerData } from "./customer-data";
+import {
+  chosenAvailableSlot,
+  resolveBookingSelection,
+  slotStartsInFuture,
+} from "./booking-selection";
 import styles from "./academy-customer.module.css";
 
 export function CourtBooking({
   initialDate,
   initialHour,
   initialCourt,
+  initialNow,
 }: {
   initialDate?: string;
   initialHour?: string;
   initialCourt?: string;
+  initialNow?: number;
 }) {
   const router = useRouter();
-  const dates = bookingDates();
-  const [date, setDate] = useState(
-    initialDate && dates.includes(initialDate) ? initialDate : dates[0],
+  const [now, setNow] = useState(() => initialNow ?? Date.now());
+  const [initialSelection] = useState(() =>
+    resolveBookingSelection(now, initialDate, initialHour),
   );
-  const [hour, setHour] = useState(
-    initialHour &&
-      /^\d{1,2}$/.test(initialHour) &&
-      Number(initialHour) >= 6 &&
-      Number(initialHour) < 24
-      ? initialHour
-      : "18",
+  const currentDate = indiaDate(new Date(now));
+  const dates = useMemo(
+    () => bookingDates(new Date(`${currentDate}T12:00:00+05:30`)),
+    [currentDate],
   );
+  const [date, setDate] = useState(initialSelection.date);
+  const [hour, setHour] = useState(initialSelection.hour);
   const [courtId, setCourtId] = useState(initialCourt ?? "");
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(initialSelection.notice);
   const [busy, setBusy] = useState(false);
   const holdAttempt = useRef<{ selection: string; key: string } | null>(null);
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(interval);
+  }, []);
+  useEffect(() => {
+    if (!dates.includes(date)) {
+      const next = resolveBookingSelection(now, null, hour);
+      setDate(next.date);
+      setHour(next.hour);
+      setNotice(
+        "The booking window has moved forward. Check your selected date and time.",
+      );
+      window.history.replaceState(
+        null,
+        "",
+        `/book?${new URLSearchParams({ date: next.date, time: next.hour, ...(courtId ? { court: courtId } : {}) })}`,
+      );
+    }
+  }, [date, dates, now, hour, courtId]);
+  useEffect(() => {
+    function restoreSelection() {
+      const params = new URLSearchParams(window.location.search);
+      const next = resolveBookingSelection(
+        Date.now(),
+        params.get("date"),
+        params.get("time"),
+      );
+      setDate(next.date);
+      setHour(next.hour);
+      setCourtId(params.get("court") ?? "");
+      setNotice(next.notice);
+    }
+    window.addEventListener("popstate", restoreSelection);
+    return () => window.removeEventListener("popstate", restoreSelection);
+  }, []);
   const inventory = useCustomerData<AvailabilityPayload>(
     `/api/availability?date=${encodeURIComponent(date)}`,
   );
   const session = useCustomerData<AcademySession>("/api/session");
   const slots =
-    inventory.data?.slots.filter(
-      (slot) => hourInIndia(slot.startsAt) === Number(hour),
-    ) ?? [];
-  const chosen =
-    slots.find((slot) => slot.courtId === courtId && slot.available) ??
-    slots.find((slot) => slot.available);
+    inventory.data?.slots
+      .filter((slot) => hourInIndia(slot.startsAt) === Number(hour))
+      .map((slot) => ({
+        ...slot,
+        available: slot.available && slotStartsInFuture(slot.startsAt, now),
+      })) ?? [];
+  const selectedCourtId = inventory.data?.courts.some(
+    (court) => court.id === courtId,
+  )
+    ? courtId
+    : "";
+  const selectedSlot = slots.find((slot) => slot.courtId === selectedCourtId);
+  const chosen = chosenAvailableSlot(slots, selectedCourtId);
   const chosenCourt = inventory.data?.courts.find(
     (court) => court.id === chosen?.courtId,
   );
+  const selectedCourtName = inventory.data?.courts.find(
+    (court) => court.id === courtId,
+  )?.name;
   const selectionPath = `/book?${new URLSearchParams({ date, time: hour, ...(chosen ? { court: chosen.courtId } : {}) })}`;
   const displayedPrice = chosen?.pricePaise ?? ACADEMY.courtPricePaise;
 
+  function updateRouteSelection(
+    nextDate: string,
+    nextHour: string,
+    nextCourt: string,
+  ) {
+    const params = new URLSearchParams({ date: nextDate, time: nextHour });
+    if (nextCourt) params.set("court", nextCourt);
+    window.history.pushState(null, "", `/book?${params.toString()}`);
+  }
+
   async function holdCourt() {
     if (!chosen || busy || inventory.loading) return;
+    if (!slotStartsInFuture(chosen.startsAt)) {
+      setNotice(
+        "That start time has passed. Refresh availability and choose another time.",
+      );
+      inventory.refresh();
+      return;
+    }
     setBusy(true);
     setNotice(null);
     try {
@@ -127,8 +196,10 @@ export function CourtBooking({
             className="academy-input"
             value={date}
             onChange={(event) => {
-              setDate(event.target.value);
+              const nextDate = event.target.value;
+              setDate(nextDate);
               setNotice(null);
+              updateRouteSelection(nextDate, hour, courtId);
             }}
             disabled={busy}
           >
@@ -145,8 +216,10 @@ export function CourtBooking({
             className="academy-input"
             value={hour}
             onChange={(event) => {
-              setHour(event.target.value);
+              const nextHour = event.target.value;
+              setHour(nextHour);
               setNotice(null);
+              updateRouteSelection(date, nextHour, courtId);
             }}
             disabled={busy}
           >
@@ -200,14 +273,18 @@ export function CourtBooking({
                 .sort((a, b) => a.number - b.number)
                 .map((court) => {
                   const slot = slots.find((item) => item.courtId === court.id);
-                  const selected = chosen?.courtId === court.id;
+                  const selected =
+                    (selectedCourtId || chosen?.courtId) === court.id;
                   return (
                     <button
                       key={court.id}
                       disabled={!slot?.available || busy}
                       aria-pressed={selected}
                       aria-label={`${court.name}, ${!slot?.available ? "unavailable" : selected ? "selected" : "available"}`}
-                      onClick={() => setCourtId(court.id)}
+                      onClick={() => {
+                        setCourtId(court.id);
+                        updateRouteSelection(date, hour, court.id);
+                      }}
                       className={`${styles.court} ${selected ? styles.selected : ""}`}
                     >
                       <span className={styles.courtLabel}>
@@ -252,7 +329,10 @@ export function CourtBooking({
           </div>
           <aside className={styles.review} aria-label="Your selection">
             <h2 className="academy-heading">
-              {chosenCourt?.name ?? "Choose another time"}
+              {chosenCourt?.name ??
+                (selectedSlot?.available === false
+                  ? `${selectedCourtName ?? "Selected court"} is unavailable`
+                  : "Choose another time")}
             </h2>
             <div className={styles.details}>
               <div>
@@ -263,7 +343,9 @@ export function CourtBooking({
                 <Clock3 size={20} />
                 {chosen
                   ? `${formatCourtTime(chosen.startsAt)} – ${formatCourtTime(chosen.endsAt)}`
-                  : "No court available at this time"}
+                  : selectedSlot?.available === false
+                    ? "This court is unavailable at this time"
+                    : "No court available at this time"}
               </div>
               <div>
                 <LayoutGrid size={20} />1 hour · up to 4 players
@@ -275,28 +357,55 @@ export function CourtBooking({
                   <span>Court booking</span>
                   <strong>{formatMoney(displayedPrice)}</strong>
                 </div>
-                <button
-                  className={`academy-button ${styles.fullButton}`}
-                  disabled={busy || session.loading || Boolean(session.error)}
-                  onClick={() => void holdCourt()}
-                >
-                  {busy
-                    ? "Holding your court…"
-                    : session.loading
-                      ? "Checking account…"
-                      : session.data?.user
-                        ? "Continue"
-                        : "Sign in to continue"}
-                </button>
+                {session.data?.paymentMode === "unconfigured" ? (
+                  <a
+                    className={`academy-button ${styles.fullButton}`}
+                    href={ACADEMY.phoneHref}
+                  >
+                    Call to reserve
+                  </a>
+                ) : (
+                  <button
+                    className={`academy-button ${styles.fullButton}`}
+                    disabled={busy || session.loading || Boolean(session.error)}
+                    onClick={() => void holdCourt()}
+                  >
+                    {busy
+                      ? "Holding your court…"
+                      : session.loading
+                        ? "Checking account…"
+                        : session.data?.user
+                          ? "Continue"
+                          : "Sign in to continue"}
+                  </button>
+                )}
                 <p className={styles.memberNote}>
                   Active members pay{" "}
                   {formatMoney(ACADEMY.memberCourtPricePaise)} per court-hour.
                 </p>
                 <p className={styles.small}>
-                  We hold your court for ten minutes while you pay. All times
-                  are India Standard Time.
+                  {session.data?.paymentMode === "unconfigured" ? (
+                    <>
+                      Checking availability does not reserve this court. Online
+                      checkout is unavailable; call the academy to arrange a
+                      reservation. Tell us your selected court, date and time.
+                      All times are India Standard Time.
+                    </>
+                  ) : (
+                    <>
+                      Continue creates a ten-minute hold while you complete
+                      payment. The booking is confirmed after payment clears.
+                      All times are India Standard Time.
+                    </>
+                  )}
                 </p>
               </>
+            ) : selectedSlot?.available === false ? (
+              <p className={styles.intro}>
+                This court is no longer available for that time. Choose another
+                court or time; your selection will not be switched
+                automatically.
+              </p>
             ) : (
               <p className={styles.intro}>
                 Try another time or day. Booked courts and maintenance periods

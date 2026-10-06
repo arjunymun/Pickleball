@@ -1,6 +1,16 @@
 # Doon Pickleball Academy rebuild checkpoint
 
-Last updated: October 4, 2026 (America/Denver). The full approved scope remains in `plan.md`. The site, auth, staff inventory and schedulers now work on the existing Vercel production URL. Payment collection remains unverified.
+Last updated: October 6, 2026 (America/Denver). The full approved scope remains in `plan.md`. The site, auth, staff inventory and schedulers now work on the existing Vercel production URL. Payment collection remains unverified.
+
+## Visitor experience audit — October 6
+
+- Owner requested a customer-perspective audit excluding payment activation, with the sole gpt-6.1-sol lead orchestrating two bounded gpt-6-luna specialists (customer and admin). No child agents or extra heavy models were used. Ownership, findings and verification are recorded in `visitor-audit.md`, requested open in the Codex right panel.
+- Reproduced a real booking-selection reset on refresh. Date/time/court now persist in the URL and restore through Back; an explicitly selected unavailable court is no longer silently replaced. Expired start times disable locally and are checked at submit; new visitors get a future default, while stale/invalid requested values receive explanations. A request-time clock snapshot keeps initial server/client selection consistent.
+- Staff Add reservation now opens a currently actionable unoccupied/unblocked slot matching the court filter, or disables when no slot remains. Its clock ages out elapsed hours. This preserves current-hour front-desk entries allowed by the existing timeline; it does not change server inventory rules.
+- Customer-facing labels now explain the actual next step: when checkout is unconfigured, booking offers Call to reserve without making a hold. Account holds offer review; membership has a clear call path; review/account rows explicitly label IST. Provider activation and collection remain excluded.
+- Added an accessible first-visit FAQ using verified prices, membership limits and staff cancellation handling. Equipment/beginner support and detailed weather rules remain unverified and are referred to staff. The home finder labels IST and below-fold venue photography is no longer preloaded.
+- Local mobile rendering, FAQ keyboard/pointer interaction, booking refresh/Back and browser console were checked. All 138 tests across 15 files, lint, TypeScript and scoped formatting checks pass. Final production build, CI and hosted verification accompany the delivery revision; no live customer/staff records were created.
+- The original durable goal remains blocked only on its recorded payment-provider requirements; this independent audit is now part of the saved plan. Preserve `RECRUITER_PREP.md`; do not repeat unchanged checks or restart specialists on heartbeat runs.
 
 ## Payment direction — October 4
 

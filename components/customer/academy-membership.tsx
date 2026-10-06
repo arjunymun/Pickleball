@@ -223,6 +223,12 @@ export function AcademyMembershipPage() {
             </>
           ) : membership?.status === "pending" ? (
             <>
+              {session.data?.paymentMode === "unconfigured" && (
+                <p className={styles.notice}>
+                  Monthly membership checkout is unavailable. Call the academy
+                  to ask about current membership options.
+                </p>
+              )}
               <p className={styles.notice}>
                 Membership payment confirmation is pending. Your benefits start
                 after the first payment is verified. Check your account before
@@ -277,6 +283,12 @@ export function AcademyMembershipPage() {
                 <p className={styles.notice}>
                   Test subscription checkout. No real monthly payment is
                   collected.
+                </p>
+              )}
+              {session.data?.paymentMode === "unconfigured" && (
+                <p className={styles.notice}>
+                  Monthly membership checkout is unavailable. Call the academy
+                  to ask about current membership options.
                 </p>
               )}
               <label
