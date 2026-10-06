@@ -221,7 +221,9 @@
 }
 .venuePhoto {
   position: relative;
-  height: 560px;
+  aspect-ratio: 16 / 9;
+  max-width: 1280px;
+  margin-inline: auto;
   overflow: hidden;
   background: #1d3a3a;
 }
@@ -564,7 +566,7 @@
     margin: 24px 0 0;
   }
   .venuePhoto {
-    height: 365px;
+    aspect-ratio: 16 / 10;
   }
   .photoBottom {
     padding: 55px 17px 18px;

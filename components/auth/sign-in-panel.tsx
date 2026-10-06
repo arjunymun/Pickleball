@@ -80,6 +80,7 @@ export function SignInPanel({
       <div className={styles.authPhoto}>
         <Image
           src={ACADEMY.photos.courts}
+          quality={90}
           alt="The academy's outdoor blue courts under floodlights"
           fill
           priority

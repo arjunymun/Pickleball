@@ -187,6 +187,7 @@ export function BookingReview({ bookingId }: { bookingId: string | null }) {
           <div className={styles.reviewPhoto}>
             <Image
               src={ACADEMY.photos.courts}
+              quality={90}
               alt="Outdoor blue pickleball courts at the academy"
               fill
               sizes="(max-width: 700px) 100vw, 420px"

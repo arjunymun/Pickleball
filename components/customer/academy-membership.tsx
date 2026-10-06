@@ -136,6 +136,7 @@ export function AcademyMembershipPage() {
           <div className={styles.membershipPhoto}>
             <Image
               src={ACADEMY.photos.evening}
+              quality={90}
               alt="Pickleball courts at the academy under evening floodlights"
               fill
               sizes="(max-width:700px) 100vw, 600px"

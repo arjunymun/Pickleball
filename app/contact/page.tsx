@@ -16,6 +16,7 @@ export default function ContactPage() {
           <div className={styles.venuePhoto}>
             <Image
               src={ACADEMY.photos.courts}
+              quality={90}
               alt="The academy's blue outdoor courts illuminated by floodlights at night"
               fill
               sizes="(max-width:700px) 100vw, 740px"

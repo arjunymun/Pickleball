@@ -136,6 +136,7 @@ export default function HomePage() {
           <div className={styles.venuePhoto}>
             <Image
               src={ACADEMY.photos.courts}
+              quality={90}
               alt="Blue outdoor courts at Doon Pickleball Academy illuminated by floodlights at night"
               fill
               sizes="(max-width:700px) 100vw, 90vw"
@@ -259,6 +260,7 @@ export default function HomePage() {
           <div className={styles.eveningPhoto}>
             <Image
               src={ACADEMY.photos.evening}
+              quality={90}
               alt="Academy courts illuminated by floodlights for an evening game"
               fill
               sizes="(max-width:700px) 100vw, 55vw"

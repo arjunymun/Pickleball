@@ -48,6 +48,7 @@ export function CourtExplorer() {
         <div className={styles.poster}>
           <Image
             src={ACADEMY.photos.courts}
+            quality={90}
             alt="Doon Pickleball Academy outdoor courts"
             fill
             sizes="100vw"
