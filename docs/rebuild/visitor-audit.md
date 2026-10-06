@@ -1,10 +1,10 @@
 # Customer experience audit — October 6, 2026
 
-**Fixes implemented; delivery verification in progress.** Reviewed the academy as a first-time customer, excluding payment-provider activation. This is part of the existing rebuild goal; that full goal remains blocked on verified payment inputs.
+**Focused visitor audit completed and fixes deployed.** Reviewed the academy as a first-time customer, excluding payment-provider activation. This is part of the existing rebuild goal; that full goal remains blocked on verified payment inputs. Remaining business facts and verification limits are listed below.
 
 | Team member | Model | Assignment | Status |
 |---|---|---|---|
-| CEO / lead orchestrator | gpt-6.1-sol | Live visitor journeys, issue prioritization, integration and final verification | Local checks passed; publishing and verifying live |
+| CEO / lead orchestrator | gpt-6.1-sol | Live visitor journeys, issue prioritization, integration and final verification | Finished; integrated, verified and deployed |
 | Customer specialist | gpt-6-luna | Booking, sign-in, membership/account UX and targeted fixes | Finished; lead reviewed and corrected integration details |
 | Admin specialist | gpt-6-luna | Staff workflow issues, visitor-to-staff handoffs and targeted fixes | Finished; lead reviewed against timeline behavior |
 
@@ -36,9 +36,9 @@ All nine findings have implemented fixes. Passing build/tests alone does not est
 
 ## Guardrails and verification
 
-No live customer reservations, membership changes, staff records or payments will be created for this audit. Preserve the existing recruiter preparation file. Genuine commits and the existing Vercel deployment remain authorized; no paid services or fabricated evidence.
+No live customer reservations, membership changes, staff records or payments were created for this audit. The existing recruiter preparation file is preserved. Genuine commits and the existing Vercel deployment remain authorized; no paid services or fabricated evidence.
 
-This report will be updated at review and integration checkpoints. It is not a live token counter or an automatic agent telemetry dashboard.
+This is the saved review and integration report, including the assigned models. It is not a live token counter or an automatic agent telemetry dashboard. Codex's right-panel open request returned queued; a queued request does not prove the panel is visible.
 
 ## Integration checkpoint
 
@@ -46,6 +46,7 @@ This report will be updated at review and integration checkpoints. It is not a l
 - The first delivery CI run passed application and database checks but rejected a newly reviewed [source-map-js advisory](https://github.com/advisories/GHSA-68fv-2mgg-jv7q). The lockfile now resolves its compatible patched version 1.2.2; fresh tests and production build pass, and the production dependency audit reports zero vulnerabilities. Full dependency audit still reports five high findings in the development-only ESLint/braces chain; npm proposes a breaking framework-linter downgrade, which has not been applied or hidden.
 - Lead review corrected default-card highlighting and copy that described a hold before one existed. Initial selection and browser-history restoration now share a validated parser. The server passes an initial timestamp to keep initial rendering consistent across clock boundaries.
 - Local mobile review verified the new FAQ opens with keyboard and pointer input without horizontal overflow. The original October 8 / 10 AM / Court 3 refresh case now retains all three choices; browser Back restores the prior choice.
+- Customer/admin fixes are in `40e061d`; the dependency patch is in `6dca86c`. [Delivery CI](https://github.com/arjunymun/Pickleball/actions/runs/37524807081) passed lint, TypeScript, 138 unit tests, database tests, production build and the production dependency audit. [Vercel production deployment](https://vercel.com/arjunymuns-projects/pickleball/J4ZsyLvivj5uF6kVGZvq1xWLjNpD) completed successfully. Hosted browsing verified preserved October 8 / 10 AM / Court 3 selection after reload and the correct call-to-reserve destination. The existing [live site](https://pickleball-xi.vercel.app) carries these fixes.
 - Review criteria: [Web Interface Guidelines](https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md). Selection history follows the documented [Next.js native History API](https://nextjs.org/docs/app/getting-started/linking-and-navigating#native-history-api).
 
 ## Practical limits and follow-up
