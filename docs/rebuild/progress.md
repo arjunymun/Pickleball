@@ -11,6 +11,7 @@ Last updated: October 6, 2026 (America/Denver). The full approved scope remains 
 - Added an accessible first-visit FAQ using verified prices, membership limits and staff cancellation handling. Equipment/beginner support and detailed weather rules remain unverified and are referred to staff. The home finder labels IST and below-fold venue photography is no longer preloaded.
 - Local mobile rendering, FAQ keyboard/pointer interaction, booking refresh/Back and browser console were checked. All 138 tests across 15 files, lint, TypeScript and scoped formatting checks pass. Final production build, CI and hosted verification accompany the delivery revision; no live customer/staff records were created.
 - The original durable goal remains blocked only on its recorded payment-provider requirements; this independent audit is now part of the saved plan. Preserve `RECRUITER_PREP.md`; do not repeat unchanged checks or restart specialists on heartbeat runs.
+- Delivery CI for `40e061d` passed application/database checks but failed the production dependency gate on the newly reviewed source-map-js advisory. Updated only its lockfile resolution from 1.2.1 to patched 1.2.2; fresh 138-test suite, production build and production audit pass. Development-only ESLint/braces advisories remain recorded in the audit report; no breaking downgrade or suppressed security check.
 
 ## Payment direction — October 4
 
