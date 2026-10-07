@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/academy/site-header";
 import { SiteFooter } from "@/components/academy/site-footer";
-import { CourtExplorer } from "@/components/academy/court-explorer";
+import { AcademyFilm } from "@/components/academy/academy-film";
+import { OptionalCourtExplorer } from "@/components/academy/optional-court-explorer";
 import { VenueMap } from "@/components/academy/venue-map";
 import { ACADEMY, formatMoney } from "@/lib/academy/config";
 import {
@@ -31,35 +32,37 @@ export default function HomePage() {
       <SiteHeader />
       <main id="main-content">
         <section className={styles.hero} aria-labelledby="home-heading">
-          <div className={`academy-container ${styles.heroInner}`}>
-            <div className={styles.heroCopy}>
-              <p className={styles.location}>
-                <MapPin size={16} /> GMS Road, Dehradun
-              </p>
-              <h1 id="home-heading">
-                Step out.
-                <br />
-                <span>Play on.</span>
-              </h1>
-              <p className={styles.heroDescription}>
-                Four blue courts. The Dehradun sky.
-                <br />A game worth stepping outside for.
-              </p>
-              <div className={styles.heroActions}>
-                <Link href="/book" className={styles.heroButton}>
-                  Find your court <ArrowUpRight size={21} />
-                </Link>
-                <a href="#courts" className={styles.exploreLink}>
-                  Explore the academy <ArrowDown size={17} />
-                </a>
-              </div>
-              <div className={styles.heroNote}>
-                <span /> From the first serve to the floodlit finish.
+          <div className={`academy-container ${styles.heroLayout}`}>
+            <div className={styles.heroInner}>
+              <div className={styles.heroCopy}>
+                <p className={styles.location}>
+                  <MapPin size={16} /> GMS Road, Dehradun
+                </p>
+                <h1 id="home-heading">
+                  Step out.
+                  <br />
+                  <span>Play on.</span>
+                </h1>
+                <p className={styles.heroDescription}>
+                  Four blue courts. The Dehradun sky.
+                  <br />A game worth stepping outside for.
+                </p>
+                <div className={styles.heroActions}>
+                  <Link href="/book" className={styles.heroButton}>
+                    Find your court <ArrowUpRight size={21} />
+                  </Link>
+                  <a href="#courts" className={styles.exploreLink}>
+                    Explore the academy <ArrowDown size={17} />
+                  </a>
+                </div>
+                <div className={styles.heroNote}>
+                  <span /> From the first serve to the floodlit finish.
+                </div>
               </div>
             </div>
-          </div>
-          <div className={`academy-container ${styles.heroArt}`}>
-            <CourtExplorer />
+            <div className={styles.heroArt}>
+              <AcademyFilm />
+            </div>
           </div>
         </section>
         <div className={`academy-container ${styles.finderWrap}`}>
@@ -135,9 +138,9 @@ export default function HomePage() {
           </div>
           <div className={styles.venuePhoto}>
             <Image
-              src={ACADEMY.photos.courts}
+              src={ACADEMY.photos.reverse}
               quality={90}
-              alt="Blue outdoor courts at Doon Pickleball Academy illuminated by floodlights at night"
+              alt="Blue academy courts viewed from the opposite end in daylight"
               fill
               sizes="(max-width:700px) 100vw, 90vw"
             />
@@ -171,6 +174,7 @@ export default function HomePage() {
               <span>The evening game is on</span>
             </div>
           </div>
+          <OptionalCourtExplorer />
         </section>
         <section className={styles.playSection} aria-labelledby="play-heading">
           <div className="academy-container">

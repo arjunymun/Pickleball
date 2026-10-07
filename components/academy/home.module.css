@@ -51,13 +51,17 @@
   padding-bottom: 72px;
 }
 .heroInner {
-  padding-block: 45px 42px;
+  padding-block: 0;
+}
+.heroLayout {
+  display: grid;
+  grid-template-columns: 0.8fr 1.35fr;
+  align-items: center;
+  gap: 42px;
+  padding-block: 48px 24px;
 }
 .heroCopy {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  column-gap: 80px;
-  align-items: center;
+  display: block;
   animation: hero-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .location {
@@ -74,11 +78,11 @@
 .hero h1 {
   grid-row: 2/5;
   font-family: var(--font-display), Impact, sans-serif;
-  font-size: clamp(90px, 10vw, 148px);
+  font-size: clamp(78px, 8vw, 110px);
   font-weight: 600;
   line-height: 0.84;
   letter-spacing: -0.035em;
-  margin: 0;
+  margin: 0 0 28px;
 }
 .hero h1 span {
   color: #dff277;
@@ -141,6 +145,31 @@
 }
 .heroArt {
   animation: hero-enter 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.courtUtility {
+  border-block: 1px solid #ffffff24;
+  margin-top: 8px;
+}
+.explorerToggle {
+  display: flex;
+  width: 100%;
+  min-height: 68px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 4px;
+  border: 0;
+  background: transparent;
+  color: #edf1e9;
+  font-size: 18px;
+  text-align: left;
+  cursor: pointer;
+}
+.explorerToggle:hover {
+  color: #dff277;
+}
+.courtUtility > div:not([hidden]) {
+  padding-bottom: 24px;
 }
 .finderWrap {
   padding-block: 0 40px;
@@ -472,11 +501,11 @@
   }
 }
 @media (max-width: 1100px) {
-  .heroCopy {
-    column-gap: 40px;
+  .heroLayout {
+    gap: 28px;
   }
   .hero h1 {
-    font-size: 110px;
+    font-size: clamp(76px, 9vw, 100px);
   }
   .heroDescription {
     font-size: 18px;
@@ -499,11 +528,16 @@
   }
 }
 @media (max-width: 700px) {
+  .heroLayout {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    padding-block: 34px 0;
+  }
   .hero {
     padding-bottom: 35px;
   }
   .heroInner {
-    padding-block: 34px 31px;
+    padding-block: 0;
   }
   .heroCopy {
     display: block;

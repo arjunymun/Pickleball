@@ -15,9 +15,9 @@ export default function ContactPage() {
           <h1 className="academy-heading">See you on court.</h1>
           <div className={styles.venuePhoto}>
             <Image
-              src={ACADEMY.photos.courts}
+              src={ACADEMY.photos.daylight}
               quality={90}
-              alt="The academy's blue outdoor courts illuminated by floodlights at night"
+              alt="Blue and green outdoor pickleball courts at the academy in daylight"
               fill
               sizes="(max-width:700px) 100vw, 740px"
             />

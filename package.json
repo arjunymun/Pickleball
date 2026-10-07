@@ -12,7 +12,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:db": "node scripts/db-test.mjs"
+    "test:db": "node scripts/db-test.mjs",
+    "film:studio": "remotion studio motion/index.tsx",
+    "film:render": "remotion render motion/index.tsx DoonFilm public/media/doon-film.mp4 --crf=22 --jpeg-quality=90",
+    "film:poster": "remotion still motion/index.tsx DoonFilm public/media/doon-film-poster.jpg --frame=35 --image-format=jpeg"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",
@@ -29,6 +32,9 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@react-three/fiber": "9.4.2",
+    "@remotion/cli": "4.0.533",
+    "@remotion/three": "4.0.533",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
@@ -39,6 +45,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.3.8",
     "pg": "^8.23.1",
+    "remotion": "4.0.533",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.5"
