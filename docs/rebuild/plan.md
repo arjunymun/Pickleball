@@ -53,6 +53,8 @@ Legacy payment/runtime/bootstrap/portfolio privileged mutations must be disabled
 
 ## Completion
 
+The owner's October 7 reference-led frontend iteration is part of the same durable goal: the review/design contract is in `visual-direction.md`, with mobile header, coherent customer styling and the new hero composition verified in `progress.md`. This independent visual work proceeds while payment identity/provider inputs remain unavailable. Use the sole heavy lead and bounded lighter specialists; genuine commits/pushes and existing-site updates are authorized by later owner instructions. Never backdate history.
+
 The owner subsequently authorized the cinematic/photo pass in `visual-direction.md`: integrate the locally rendered eight-second film, use distinct real academy photograph roles, keep book controls accessible and the interactive schematic optional. Verify native playback/pause, viewport/visibility handling, poster/error fallbacks, mobile layout and motion preference gates before publishing. This credential-independent extension does not close the unverified payment scope.
 
 Verify parallel holds, customer isolation, provider signature/payment amount/currency/ownership, retry/late payment/refunds, membership paid period/renewal failure/cancel/attendance, external blocks, auth return paths, responsive and keyboard customer/staff journeys. Pass tests/lint/tsc/build and CI. Then consolidate Supabase provisioning, Google OAuth, custom SMTP, Razorpay keys/subscription activation/webhook, staff owner setup and deployment inputs. Test actual auth/payment/RLS against provisioned backend before readiness claims. Live activation is a separate final verified gate.

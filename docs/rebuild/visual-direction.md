@@ -1,5 +1,15 @@
 # Visual direction correction — October 6
 
+## Reference-led composition — October 7
+
+Owner reference: https://www.youtube.com/watch?v=9jBZbsvQ014, Brendan Jowett, “I Gave Opus 5.5 600,000+ Design References (this is INSANE)”, 19:35. Read the complete timestamped English transcript and followed native browser playback from the opening to the closing examples, with ordered visual observations. Browser tools expose screenshots rather than a continuous audiovisual feed; this review does not claim to have heard the audio or inspected every frame. Playback initially stalled, then worked in Edge at 360p. No remote video was downloaded.
+
+The video compares raw model output with reference-informed landing pages, dashboards and mobile screens. Its useful lessons are consistent typography, product-specific graphics, varied section compositions, clearer action hierarchy and concrete brand constraints. The creator explicitly criticizes both close copying of a reference and overcrowded mobile output. The sponsored Mobbin/paid connector setup is not required for this work and was not purchased or installed.
+
+The current Doon hero separates the film from its headline, repeats similar section spacing and changes visual language at the booking route. The next pass uses light paper (#f6f7f2), deep ink (#12251e), court blue (#155ee8) and ball lime (#dcf56b), with the existing Barlow Condensed and Source Sans typefaces. Build one athletic opening composition around an original perforated 3D ball and court geometry, then use real venue photography and distinct pricing layouts. Give the existing film a dedicated section; keep its actual motion controls and fallback. Compact mobile navigation and customer-page styling must use the same identity.
+
+Keep authoritative availability, selected booking intent, verified prices, membership rules, phone confirmation and payment readiness intact. Do not copy SaaS testimonials, discounts, synthetic figures or unsupported academy amenities. Two bounded gpt-6-luna workers own header navigation and customer CSS; the sole gpt-6.1-sol lead owns composition, integration and rendered verification. This extends the approved durable goal without closing its payment requirement.
+
 ## Reference and honest assessment
 
 Owner reference: https://www.youtube.com/watch?v=747ZnEtsRbg — Lukas Margerie's motion-graphics workflow. Reviewed its description, chapter structure and selected reference-workflow frames, not every minute of the video. It emphasizes real brand assets, motion rules, reference-led direction and repeated critique. This is a useful production method; its promotional model/provider claims are not prerequisites for this project.

@@ -12,6 +12,7 @@ import {
 import { SiteHeader } from "@/components/academy/site-header";
 import { SiteFooter } from "@/components/academy/site-footer";
 import { AcademyFilm } from "@/components/academy/academy-film";
+import { HeroScene } from "@/components/academy/hero-scene";
 import { OptionalCourtExplorer } from "@/components/academy/optional-court-explorer";
 import { VenueMap } from "@/components/academy/venue-map";
 import { ACADEMY, formatMoney } from "@/lib/academy/config";
@@ -39,29 +40,31 @@ export default function HomePage() {
                   <MapPin size={16} /> GMS Road, Dehradun
                 </p>
                 <h1 id="home-heading">
-                  Step out.
+                  <span className={styles.heroLead}>Your next</span>
+                  Great
                   <br />
-                  <span>Play on.</span>
+                  game.
                 </h1>
                 <p className={styles.heroDescription}>
-                  Four blue courts. The Dehradun sky.
-                  <br />A game worth stepping outside for.
+                  Four blue courts. One good reason to get outside. Find your
+                  game at Doon Pickleball Academy.
                 </p>
                 <div className={styles.heroActions}>
                   <Link href="/book" className={styles.heroButton}>
                     Find your court <ArrowUpRight size={21} />
                   </Link>
                   <a href="#courts" className={styles.exploreLink}>
-                    Explore the academy <ArrowDown size={17} />
+                    Take a look around <ArrowDown size={17} />
                   </a>
                 </div>
                 <div className={styles.heroNote}>
-                  <span /> From the first serve to the floodlit finish.
+                  <span /> ₹500 / court / hour{" "}
+                  <span className={styles.noteDivider}>·</span> 6 AM – midnight
                 </div>
               </div>
             </div>
             <div className={styles.heroArt}>
-              <AcademyFilm />
+              <HeroScene />
             </div>
           </div>
         </section>
@@ -75,7 +78,7 @@ export default function HomePage() {
               <LayoutGrid size={24} />
               <div>
                 <strong>Make time for a game.</strong>
-                <span>One hour. Your court. Your crew. Times in IST.</span>
+                <span>Browse live availability next. All times in IST.</span>
               </div>
             </div>
             <label>
@@ -136,25 +139,44 @@ export default function HomePage() {
               sunset.
             </p>
           </div>
-          <div className={styles.venuePhoto}>
-            <Image
-              src={ACADEMY.photos.reverse}
-              quality={90}
-              alt="Blue academy courts viewed from the opposite end in daylight"
-              fill
-              sizes="(max-width:700px) 100vw, 90vw"
-            />
-            <div className={styles.photoBottom}>
-              <span>
-                <MapPin size={17} /> Your local court, GMS Road
-              </span>
-              <a
-                href={ACADEMY.mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Find us <ArrowUpRight size={18} />
-              </a>
+          <div className={styles.venueGallery}>
+            <div className={styles.venuePhoto}>
+              <Image
+                src={ACADEMY.photos.reverse}
+                quality={90}
+                alt="Blue academy courts viewed from the opposite end in daylight"
+                fill
+                sizes="(max-width:700px) 100vw, 60vw"
+              />
+              <div className={styles.photoBottom}>
+                <span>
+                  <MapPin size={17} /> Your local court, GMS Road
+                </span>
+                <a
+                  href={ACADEMY.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Find us <ArrowUpRight size={18} />
+                </a>
+              </div>
+            </div>
+            <div className={styles.venueAside}>
+              <span className={styles.courtNumber}>04</span>
+              <p>
+                Outdoor courts.
+                <br />
+                All yours to explore.
+              </p>
+              <div className={styles.dayPhoto}>
+                <Image
+                  src={ACADEMY.photos.daylight}
+                  alt="A different daylight view across the academy's blue outdoor courts"
+                  fill
+                  quality={90}
+                  sizes="(max-width:700px) 50vw, 28vw"
+                />
+              </div>
             </div>
           </div>
           <div className={styles.facts}>
@@ -215,7 +237,10 @@ export default function HomePage() {
                   Book a court <ArrowUpRight size={22} />
                 </div>
               </Link>
-              <a href={ACADEMY.phoneHref} className={styles.priceCard}>
+              <a
+                href={ACADEMY.phoneHref}
+                className={`${styles.priceCard} ${styles.individualCard}`}
+              >
                 <div className={styles.cardIcon}>
                   <Users size={28} />
                 </div>
@@ -245,7 +270,10 @@ export default function HomePage() {
                   A daily game.
                   <br />A better routine.
                 </h3>
-                <p>One hour of individual play every day.</p>
+                <p>
+                  One hour of individual play every day. ₹400/hour for a whole
+                  court.
+                </p>
                 <div className={styles.price}>
                   {formatMoney(ACADEMY.membershipPricePaise)}
                   <span>/ month</span>
@@ -284,6 +312,28 @@ export default function HomePage() {
             <Link href="/book" className="academy-button">
               Plan your next game <ArrowUpRight size={18} />
             </Link>
+          </div>
+        </section>
+        <section className={styles.filmSection} aria-labelledby="film-heading">
+          <div className={`academy-container ${styles.filmLayout}`}>
+            <div>
+              <span className={styles.filmIndex}>
+                DOON, IN MOTION / 8 SECONDS
+              </span>
+              <h2 id="film-heading">
+                Feel the
+                <br />
+                <span>next rally.</span>
+              </h2>
+              <p>
+                A court, a ball, a little anticipation. Our original animated
+                take on the game.
+              </p>
+              <a href="#courts" className={styles.filmLink}>
+                See the real courts <ArrowUpRight size={20} />
+              </a>
+            </div>
+            <AcademyFilm />
           </div>
         </section>
         <section

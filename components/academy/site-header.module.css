@@ -1,0 +1,239 @@
+.header {
+  --header-paper: #f6f7f2;
+  --header-ink: #12251e;
+  --header-blue: #155ee8;
+  --header-lime: #dcf56b;
+  --header-line: #dce1d8;
+  position: sticky;
+  z-index: 40;
+  top: 0;
+  border-bottom: 1px solid var(--header-line);
+  background: color-mix(in srgb, var(--header-paper) 96%, transparent);
+  color: var(--header-ink);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.header .inner {
+  min-height: 84px;
+  gap: 28px;
+  padding-block: 0;
+}
+
+.header .desktopNav {
+  display: flex;
+  align-items: center;
+  gap: clamp(18px, 2.5vw, 34px);
+  color: var(--header-ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.desktopNav a {
+  position: relative;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+
+.desktopNav a::after {
+  position: absolute;
+  right: 0;
+  bottom: 5px;
+  left: 0;
+  height: 2px;
+  background: var(--header-blue);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms ease;
+}
+
+.desktopNav a:hover,
+.mobileNavInner a:hover {
+  color: var(--header-blue);
+}
+
+.desktopNav a:hover::after {
+  transform: scaleX(1);
+}
+
+.desktopActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header .desktopActions :global(.academy-button-secondary) {
+  display: inline-flex;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-color: var(--header-line);
+  background: transparent;
+  color: var(--header-ink);
+}
+
+.header .bookButton {
+  min-height: 44px;
+  padding: 10px 17px;
+  border-color: var(--header-blue);
+  border-radius: 6px;
+  background: var(--header-blue);
+  box-shadow: none;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.header .bookButton:hover:not(:disabled) {
+  transform: none;
+  background: #104fc7;
+  box-shadow: none;
+}
+
+.mobileActions,
+.mobileNav {
+  display: none;
+}
+
+.header :global(.academy-brand) {
+  gap: 8px;
+  color: var(--header-ink);
+}
+
+.header :global(.academy-brand__ball) {
+  width: 38px;
+  height: 38px;
+}
+
+.header :global(.academy-brand__name) {
+  font-size: 31px;
+}
+
+.header :global(.academy-brand__sub) {
+  font-size: 11px;
+  letter-spacing: 0.045em;
+}
+
+.header :global(.academy-brand):focus-visible,
+.desktopNav a:focus-visible,
+.mobileNavInner a:focus-visible,
+.mobileActions a:focus-visible,
+.desktopActions a:focus-visible,
+.menuButton:focus-visible {
+  border-radius: 3px;
+  outline: 3px solid var(--header-blue);
+  outline-offset: 4px;
+}
+
+.menuButton {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--header-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--header-ink);
+}
+
+.menuIcon {
+  display: grid;
+  width: 18px;
+  gap: 5px;
+}
+
+.menuIcon span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+@media (max-width: 900px) {
+  .header .inner {
+    min-height: 70px;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding-block: 0;
+  }
+
+  .header .desktopNav,
+  .header .desktopActions {
+    display: none;
+  }
+
+  .mobileActions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .header .bookButton {
+    min-height: 42px;
+    padding: 9px 12px;
+    font-size: 14px;
+  }
+
+  .mobileNav {
+    display: block;
+    border-top: 1px solid var(--header-line);
+    background: var(--header-paper);
+  }
+
+  .mobileNav[hidden] {
+    display: none;
+  }
+
+  .mobileNavInner {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 16px;
+    padding-block: 10px 14px;
+  }
+
+  .mobileNavInner a {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    border-bottom: 1px solid var(--header-line);
+    color: var(--header-ink);
+    font-size: 15px;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 380px) {
+  .header .inner :global(.academy-brand) {
+    gap: 6px;
+  }
+
+  .header .inner :global(.academy-brand__ball) {
+    width: 30px;
+    height: 30px;
+  }
+
+  .header .inner :global(.academy-brand__name) {
+    font-size: 23px;
+  }
+
+  .header .inner :global(.academy-brand__sub) {
+    display: none;
+  }
+
+  .header .bookButton {
+    padding-inline: 9px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktopNav a::after {
+    transition: none;
+  }
+}

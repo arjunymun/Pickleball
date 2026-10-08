@@ -61,7 +61,7 @@ function acrylicTexture() {
   return texture;
 }
 
-function Pickleball({ close }: { close: boolean }) {
+export function Pickleball({ close }: { close: boolean }) {
   const frame = useCurrentFrame();
   const outer = useMemo(() => perforatedSphere(0.65), []);
   const inner = useMemo(() => perforatedSphere(0.62), []);
